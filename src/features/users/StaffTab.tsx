@@ -18,9 +18,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog"
 import { useState } from "react"
 import { AVAILABLE_ROLES } from "./AdminPanel"

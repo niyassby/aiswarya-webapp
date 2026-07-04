@@ -1,7 +1,7 @@
-import { Card } from '@/components/ui/card'
+
 import { supabase } from '@/utils/supabase'
 import { useQuery } from '@tanstack/react-query'
-import React from 'react'
+
 import {
   Table,
   TableBody,

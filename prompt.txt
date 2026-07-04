@@ -1,0 +1,271 @@
+Build a Sales and Purchase Management Web App using Vite + React (TypeScript) for the frontend and Supabase (Postgres + Auth + RLS + Storage) as the backend. The app manages customers, sales orders, purchase requests, and complaints, with role-based access control (RBAC) across four roles: Sales Admin, Accounts, Manager, and Super Admin.
+
+1. Tech Stack
+
+- Frontend: Vite, React 18, TypeScript, React Router v6, Tailwind CSS, shadcn/ui
+- State/Data: TanStack Query (React Query) for server state, Context for light client state
+- Backend: Supabase (Postgres, Auth, Row Level Security, Storage, Realtime for live status updates)
+- Forms/Validation: Zod
+- Barcode Scanning: `react-zxing` or `html5-qrcode` for camera-based barcode/QR scanning in the browser
+
+2. Roles & Permissions
+
+Role | Key Capabilities
+
+Sales Admin | Create customers, create orders (barcode scan or manual entry/specs), set order status (enquiry / invoice / purchase / etc.), create purchase requests for out-of-stock items, file complaints |
+Accounts | View all customers and products/orders, update order/payment status, file complaints |
+Manager | View and manage purchase requests, view all complaints, assign complaints to a Sales Admin, view reports/dashboards |
+Super Admin | All Manager capabilities + manage users (create/edit/deactivate admins and assign roles), manage system settings, view audit logs |
+
+Notes:
+- A user can potentially hold multiple roles (e.g. Accounts + Sales Admin), so model roles as a many-to-many relationship rather than a single column.
+- Use Supabase Auth for login; store role assignments in a separate `user_roles` table, and enforce access both in the UI (route guards / conditional rendering).
+
+3. Core Modules / Features
+
+3.1 Authentication & User Management
+- Email/password login via Supabase Auth (invite-only — no public signup).
+- Super Admin can create new users and assign one or more roles.
+- Profile includes name, phone, role(s), active/inactive status.
+
+3.2 Customer Management
+- Create/edit customer with: name, phone, email, address, GST/Tax ID (optional), notes.
+- Search/filter customers by name/phone.
+- View customer's full order history.
+
+3.3 Orders (Sales)
+- Sales Admin creates an order tied to a customer.
+- Add one or more line items (products) via barcode scan or manual entry, with quantity.
+- Order has a status pipeline: `enquiry → invoice → purchase → completed` (extendable, e.g. add `cancelled`, `delivered`).
+- Status history log (who changed status, when, from → to).
+- Accounts and Manager can view/update order status.
+- Order detail page shows customer, items, status timeline, linked purchase requests (if any), and linked complaints.
+
+3.4 Purchase Requests (Stock Procurement)
+- Created when a sales admin needs an item not currently in stock, linked to the originating order/customer (optional).
+- Fields: product name/specs, quantity needed, requested by, linked order (nullable), status (`requested → ordered → received → fulfilled`), supplier info (optional), expected date.
+- Manager views and manages all purchase requests; can mark as ordered/received.
+- When fulfilled, optionally trigger stock update on the product catalog and notify the originating sales admin.
+
+3.5 Complaints
+- Any authenticated user can file a complaint: subject, description, related customer/order (optional), priority, attachments (optional, via Supabase Storage).
+- All complaints route to the Manager's queue.
+- Manager assigns a complaint to a specific Sales Admin, sets priority/due date.
+- Status pipeline: `open → assigned → in_progress → resolved → closed`.
+- Assigned Sales Admin gets notified (Realtime + in-app badge) and updates status/comments as they work it.
+- Comment/activity thread per complaint.
+
+3.6 Dashboards
+- Sales Admin: my customers, my open orders, my pending purchase requests, my assigned complaints.
+- Accounts: orders needing status updates.
+- Manager: all open orders/purchase requests/complaints, unassigned complaints queue, team performance overview.
+- Super Admin: all of the above + user management panel + system-wide stats.
+
+4. Database Schema (Supabase / Postgres)
+
+sql
+-- USERS & ROLES 
+
+-- Supabase auth.users is the source of truth for auth; this extends it.
+create table profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  full_name text not null,
+  phone text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create type app_role as enum ('sales_admin', 'accounts', 'manager', 'super_admin');
+
+-- Many-to-many: a user can have multiple roles
+create table user_roles (
+  user_id uuid not null references profiles(id) on delete cascade,
+  role app_role not null,
+  assigned_by uuid references profiles(id),
+  assigned_at timestamptz not null default now(),
+  primary key (user_id, role)
+);
+
+-- CUSTOMERS --
+
+create table customers (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  phone text,
+  email text,
+  address text,
+  tax_id text,
+  notes text,
+  created_by uuid references profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- ORDERS -
+
+create type order_status as enum ('enquiry', 'invoice', 'purchase', 'completed', 'cancelled');
+
+create table orders (
+  id uuid primary key default gen_random_uuid(),
+  order_no text unique not null, -- e.g. auto-generated human-readable number
+  customer_id uuid not null references customers(id),
+  status order_status not null default 'enquiry',
+  created_by uuid references profiles(id), -- sales admin
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table order_items (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references orders(id) on delete cascade,
+  barcode text unique,
+  item_name text,
+  specs text,
+  is_custom boolean default false, -- true if manually entered, no barcode
+  quantity integer default 0,
+  unit_price numeric(12,2) default 0,
+  created_at timestamptz not null default now()
+);
+
+create table order_status_history (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references orders(id) on delete cascade,
+  from_status order_status,
+  to_status order_status not null,
+  changed_by uuid references profiles(id),
+  changed_at timestamptz not null default now(),
+  note text
+);
+
+-- PURCHASE REQUESTS -
+
+create type purchase_status as enum ('requested', 'ordered', 'received', 'fulfilled', 'cancelled');
+
+create table purchase_requests (
+  id uuid primary key default gen_random_uuid(),
+  request_no text unique not null,
+  order_id uuid references orders(id), -- optional link to originating order
+  product_name text not null,
+  specs text,
+  quantity integer not null default 1,
+  supplier_info text,
+  status purchase_status not null default 'requested',
+  requested_by uuid references profiles(id),
+  expected_date date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table purchase_request_comments (
+  id uuid primary key default gen_random_uuid(),
+  purchase_request_id uuid not null references purchase_requests(id) on delete cascade,
+  author_id uuid references profiles(id),
+  comment text not null,
+  created_at timestamptz not null default now()
+);
+
+-- COMPLAINTS 
+
+create type complaint_status as enum ('open', 'assigned', 'in_progress', 'resolved', 'closed');
+create type complaint_priority as enum ('low', 'medium', 'high', 'urgent');
+
+create table complaints (
+  id uuid primary key default gen_random_uuid(),
+  complaint_no text unique not null,
+  subject text not null,
+  description text,
+  customer_id uuid references customers(id),
+  order_id uuid references orders(id),
+  priority complaint_priority not null default 'medium',
+  status complaint_status not null default 'open',
+  raised_by uuid references profiles(id) not null,
+  assigned_to uuid references profiles(id),
+  assigned_by uuid references profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table complaint_comments (
+  id uuid primary key default gen_random_uuid(),
+  complaint_id uuid not null references complaints(id) on delete cascade,
+  author_id uuid references profiles(id),
+  comment text not null,
+  created_at timestamptz not null default now()
+);
+
+-- AUDIT LOG (optional, recommended) -
+
+create table audit_log (
+  id uuid primary key default gen_random_uuid(),
+  actor_id uuid references profiles(id),
+  action text not null,
+  entity_type text not null,
+  entity_id uuid,
+  details jsonb,
+  created_at timestamptz not null default now()
+);
+
+Helper function for role checks (used in RLS policies)
+sql
+create or replace function has_role(_role app_role)
+returns boolean as $$
+  select exists (
+    select 1 from user_roles
+    where user_id = auth.uid() and role = _role
+  );
+$$ language sql security definer stable;
+
+create or replace function has_any_role(variadic _roles app_role[])
+returns boolean as $$
+  select exists (
+    select 1 from user_roles
+    where user_id = auth.uid() and role = any(_roles)
+  );
+$$ language sql security definer stable;
+
+5. Frontend Structure (Vite + React + TS)
+
+src/
+  app/
+    routes.tsx               route definitions with role-guarded routes
+    AppLayout.tsx             shell with sidebar nav based on role
+  features/
+    auth/                     login, session, useAuth hook
+    customers/                 list, detail, create/edit form
+    products/                   catalog, barcode scan component
+    orders/                      list, detail, create wizard, status pipeline UI
+    purchase-requests/            list, detail, status updates
+    complaints/                    list, detail, assignment UI, comments thread
+    users/                          super admin: user + role management
+    dashboard/                       role-specific dashboards
+  components/
+    ui/                        shared shadcn/ui components
+    BarcodeScanner.tsx
+    StatusBadge.tsx
+    RoleGuard.tsx              wraps routes/components by allowed roles
+  hooks/
+    useRole.ts
+    tanstack/
+  lib/
+    supabaseClient.ts
+    queries/                   React Query hooks per entity
+  types/
+    database.types.ts          generated via `supabase gen types typescript`
+
+- Use `supabase gen types typescript` to keep TS types in sync with the schema.
+- Implement a `useRole()` hook returning the current user's role array, and a `<RoleGuard allow={['manager','super_admin']}>` wrapper for both routes and UI elements (e.g. hide the "Assign" button from non-managers).
+- Use Supabase Realtime subscriptions on `complaints` and `orders` so Manager/Sales Admin dashboards update live.
+
+6. Suggested Build Order
+
+1. Supabase project setup: schema, enums, RLS policies, seed roles for yourself as super_admin.
+2. Auth flow + role-aware layout/navigation.
+3. Customer CRUD.
+4. Product catalog CRUD + barcode scanner component.
+5. Order creation flow (customer select → add items via scan/manual → status).
+6. Order status pipeline + history + Accounts/Manager status update views.
+7. Purchase request flow linked to orders.
+8. Complaints module: create → manager queue → assign → resolve, with comments.
+9. Dashboards per role.
+10. Super Admin user/role management panel.
+11. Polish: notifications, audit log, search/filter, pagination.

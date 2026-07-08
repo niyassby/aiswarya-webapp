@@ -1,9 +1,6 @@
 import React, { useState } from "react"
 import { Link } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
 import { supabase } from "@/utils/supabase"
 import { useRole } from "@/hooks/useRole"
 import { useAuth } from "@/features/auth/useAuth"
@@ -11,17 +8,6 @@ import { toast } from "@/components/ui/toast"
 import StatusBadge from "@/components/StatusBadge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog"
 import {
   Table,
   TableBody,
@@ -41,7 +27,6 @@ import {
   ArrowUpRight,
 } from "lucide-react"
 
-
 import {
   Select,
   SelectContent,
@@ -51,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import PaginationUI from "@/components/PaginationUI"
 const items = [
   { label: "All", value: "all" },
   { label: "Requested", value: "requested" },
@@ -60,17 +46,6 @@ const items = [
   { label: "Cancelled", value: "cancelled" },
 ]
 
-// Form Schema
-const prSchema = z.object({
-  product_name: z.string().min(2, "Product name must be at least 2 characters"),
-  specs: z.string().optional().or(z.literal("")),
-  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
-  supplier_info: z.string().optional().or(z.literal("")),
-  expected_date: z.string().optional().or(z.literal("")),
-})
-
-type PrFormValues = z.infer<typeof prSchema>
-
 export const PurchaseRequestList: React.FC = () => {
   const queryClient = useQueryClient()
   const { isSalesAdmin, isManager, isSuperAdmin } = useRole()
@@ -78,30 +53,11 @@ export const PurchaseRequestList: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [page, setPage] = useState(1)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
 
   const canCreate = isSalesAdmin || isManager || isSuperAdmin
   const canApprove = isManager || isSuperAdmin
-
-  // React Hook Form
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<PrFormValues>({
-    resolver: zodResolver(prSchema) as any,
-    defaultValues: {
-      product_name: "",
-      specs: "",
-      quantity: 1,
-      supplier_info: "",
-      expected_date: "",
-    },
-  })
 
   // Queries
   // Separate query for metrics/counters
@@ -119,45 +75,53 @@ export const PurchaseRequestList: React.FC = () => {
     enabled: !!profile,
   })
 
-  const { data: { purchaseRequests = [], totalCount = 0 } = {}, isLoading } = useQuery({
-    queryKey: ["purchase-requests", profile?.id, page, searchTerm, statusFilter],
-    queryFn: async () => {
-      if (!profile) return { purchaseRequests: [], totalCount: 0 }
-      let query = supabase
-        .from("purchase_requests")
-        .select(
+  const { data: { purchaseRequests = [], totalCount = 0 } = {}, isLoading } =
+    useQuery({
+      queryKey: [
+        "purchase-requests",
+        profile?.id,
+        page,
+        searchTerm,
+        statusFilter,
+      ],
+      queryFn: async () => {
+        if (!profile) return { purchaseRequests: [], totalCount: 0 }
+        let query = supabase.from("purchase_requests").select(
           `
           *,
           orders (order_no),
-          profiles (full_name)
+          profiles (full_name),
+          purchase_request_items (*)
         `,
           { count: "exact" }
         )
 
-      if (searchTerm) {
-        query = query.or(`request_no.ilike.%${searchTerm}%,product_name.ilike.%${searchTerm}%`)
-      }
+        if (searchTerm) {
+          query = query.or(
+            `request_no.ilike.%${searchTerm}%,supplier_info.ilike.%${searchTerm}%`
+          )
+        }
 
-      if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter)
-      }
+        if (statusFilter !== "all") {
+          query = query.eq("status", statusFilter)
+        }
 
-      if (isSalesAdmin && !isSuperAdmin && !isManager) {
-        query = query.eq("requested_by", profile.id)
-      }
+        if (isSalesAdmin && !isSuperAdmin && !isManager) {
+          query = query.eq("requested_by", profile.id)
+        }
 
-      const from = (page - 1) * pageSize
-      const to = from + pageSize - 1
+        const from = (page - 1) * pageSize
+        const to = from + pageSize - 1
 
-      const { data, count, error } = await query
-        .order("created_at", { ascending: false })
-        .range(from, to)
+        const { data, count, error } = await query
+          .order("created_at", { ascending: false })
+          .range(from, to)
 
-      if (error) throw error
-      return { purchaseRequests: data || [], totalCount: count || 0 }
-    },
-    enabled: !!profile,
-  })
+        if (error) throw error
+        return { purchaseRequests: data || [], totalCount: count || 0 }
+      },
+      enabled: !!profile,
+    })
 
   const totalPages = Math.ceil(totalCount / pageSize)
 
@@ -173,35 +137,7 @@ export const PurchaseRequestList: React.FC = () => {
     },
   })
 
-
   // Mutations
-  const createPrMutation = useMutation({
-    mutationFn: async (values: PrFormValues) => {
-      const { data, error } = await supabase.from("purchase_requests").insert([
-        {
-          product_name: values.product_name,
-          specs: values.specs || null,
-          quantity: values.quantity,
-          supplier_info: values.supplier_info || null,
-          expected_date: values.expected_date || null,
-          requested_by: profile?.id,
-          status: "requested",
-        },
-      ])
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["purchase-requests"] })
-      toast.success("Purchase request created!")
-      setAddDialogOpen(false)
-      reset()
-    },
-    onError: (err: any) => {
-      toast.error(err.message || "Failed to create request")
-    },
-  })
-
   const updateStatusMutation = useMutation({
     mutationFn: async ({
       prId,
@@ -222,32 +158,33 @@ export const PurchaseRequestList: React.FC = () => {
 
       // If marked as received, increment product stock if match exists
       if (nextStatus === "received") {
-        const matchProduct = products.find(
-          (p) => p.name.toLowerCase() === targetPr.product_name.toLowerCase()
-        )
-        if (matchProduct) {
-          const { error: stockErr } = await supabase
-            .from("products")
-            .update({
-              stock_quantity: matchProduct.stock_quantity + targetPr.quantity,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", matchProduct.id)
-          if (stockErr) throw stockErr
-
-          // Log to audit log
-          await supabase.from("audit_log").insert([
-            {
-              actor_id: profile?.id,
-              action: `Received PR-${targetPr.request_no}. Auto-incremented stock for ${matchProduct.name} by ${targetPr.quantity}`,
-              entity_type: "products",
-              entity_id: matchProduct.id,
-            },
-          ])
-          toast.success(
-            `Inventory stock for ${matchProduct.name} auto-incremented!`
+        const prItems = targetPr.purchase_request_items || []
+        for (const item of prItems) {
+          const matchProduct = products.find(
+            (p) => p.name.toLowerCase() === item.product_name.toLowerCase()
           )
+          if (matchProduct) {
+            const { error: stockErr } = await supabase
+              .from("products")
+              .update({
+                stock_quantity: matchProduct.stock_quantity + item.quantity,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", matchProduct.id)
+            if (stockErr) throw stockErr
+
+            // Log to audit log
+            await supabase.from("audit_log").insert([
+              {
+                actor_id: profile?.id,
+                action: `Received PR-${targetPr.request_no}. Auto-incremented stock for ${matchProduct.name} by ${item.quantity}`,
+                entity_type: "products",
+                entity_id: matchProduct.id,
+              },
+            ])
+          }
         }
+        toast.success("Inventory stock for all items auto-incremented!")
       }
 
       // Log PR update
@@ -270,16 +207,6 @@ export const PurchaseRequestList: React.FC = () => {
     },
   })
 
-
-  // Autocomplete select for product search
-  const handleSelectProduct = (productName: string) => {
-    const product = products.find((p) => p.name === productName)
-    if (product) {
-      setValue("product_name", product.name)
-      setValue("specs", product.specs || "")
-    }
-  }
-
   // Filter logic moved to server-side
 
   return (
@@ -296,116 +223,13 @@ export const PurchaseRequestList: React.FC = () => {
         </div>
 
         {canCreate && (
-          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-            <DialogTrigger
-              render={
-                <Button className="flex items-center gap-2 rounded-xl shadow-md">
-                  <Plus className="h-4 w-4" />
-                  Submit Request
-                </Button>
-              }
-            />
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Raise Purchase Request</DialogTitle>
-              </DialogHeader>
-              <form
-                onSubmit={handleSubmit((v) => createPrMutation.mutate(v))}
-                className="space-y-4 pt-4"
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="product_name">Product Name *</Label>
-                  <Input
-                    id="product_name"
-                    {...register("product_name")}
-                    placeholder="e.g. 10mm Steel Rods"
-                    list="catalog-names"
-                    onChange={(e) => handleSelectProduct(e.target.value)}
-                  />
-                  <datalist id="catalog-names">
-                    {products.map((p) => (
-                      <option key={p.id} value={p.name} />
-                    ))}
-                  </datalist>
-                  {errors.product_name && (
-                    <p className="text-xs text-rose-500">
-                      {errors.product_name.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="specs">Product Specifications</Label>
-                  <Textarea
-                    id="specs"
-                    {...register("specs")}
-                    placeholder="Grade, size, dimensions..."
-                    rows={2}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="quantity">Quantity Required *</Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      {...register("quantity")}
-                    />
-                    {errors.quantity && (
-                      <p className="text-xs text-rose-500">
-                        {errors.quantity.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="expected_date">
-                      Expected Delivery Date
-                    </Label>
-                    <Input
-                      id="expected_date"
-                      type="date"
-                      {...register("expected_date")}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="supplier_info">
-                    Supplier / Vendor Info (Optional)
-                  </Label>
-                  <Input
-                    id="supplier_info"
-                    {...register("supplier_info")}
-                    placeholder="Supplier name, contact details..."
-                  />
-                </div>
-
-                <DialogFooter className="pt-4">
-                  <DialogClose
-                    render={
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="rounded-xl"
-                      >
-                        Cancel
-                      </Button>
-                    }
-                  />
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="rounded-xl"
-                  >
-                    {isSubmitting ? "Submitting..." : "Submit PR"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button
+            render={<Link to="/purchase-requests/create" />}
+            className="flex items-center gap-2 rounded-xl shadow-md"
+          >
+            <Plus className="h-4 w-4" />
+            Submit Request
+          </Button>
         )}
       </div>
 
@@ -470,26 +294,29 @@ export const PurchaseRequestList: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center gap-2 justify-center sm:justify-end w-full">
-             <Select items={items} value={statusFilter} onValueChange={(value:any) => {
+          <div className="flex w-full items-center justify-center gap-2 sm:justify-end">
+            <Select
+              items={items}
+              value={statusFilter}
+              onValueChange={(value: any) => {
                 setStatusFilter(value)
                 setPage(1)
-              }}>
-      <SelectTrigger className="w-full max-w-48">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          <SelectLabel>Filter by Status</SelectLabel>
-          {items.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
-           
+              }}
+            >
+              <SelectTrigger className="w-full max-w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Filter by Status</SelectLabel>
+                  {items.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -508,7 +335,7 @@ export const PurchaseRequestList: React.FC = () => {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow >
+                <TableRow>
                   <TableHead className="font-semibold">PR No</TableHead>
                   <TableHead className="font-semibold">
                     Product Requested
@@ -522,178 +349,152 @@ export const PurchaseRequestList: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {purchaseRequests.map((pr) => (
-                  <TableRow
-                    key={pr.id}
-                  >
-                    <TableCell className="font-mono font-bold ">
-                      {pr.request_no}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <span className="block font-semibold ">
-                          {pr.product_name}
-                        </span>
-                        {pr.specs && (
-                          <span className="block text-[10px] text-muted-foreground">
-                            {pr.specs}
+                {purchaseRequests.map((pr) => {
+                  const firstItem = pr.purchase_request_items?.[0]
+                  const itemText = firstItem
+                    ? `${firstItem.product_name}${pr.purchase_request_items.length > 1 ? ` (+${pr.purchase_request_items.length - 1} more)` : ""}`
+                    : "No items"
+                  const totalQty =
+                    pr.purchase_request_items?.reduce(
+                      (sum: number, item: any) => sum + item.quantity,
+                      0
+                    ) || 0
+
+                  return (
+                    <TableRow key={pr.id}>
+                      <TableCell className="font-mono font-bold">
+                        {pr.request_no}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <span className="block font-semibold">
+                            {itemText}
+                          </span>
+                          {firstItem?.specs && (
+                            <span className="block text-[10px] text-muted-foreground">
+                              {firstItem.specs}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        {totalQty} units
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {pr.expected_date ? (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3.5 w-3.5 opacity-60" />
+                            {new Date(pr.expected_date).toLocaleDateString()}
+                          </div>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-primary">
+                        {pr.order_id ? (
+                          <Link
+                            to={`/orders/${pr.order_id}`}
+                            className="hover:underline"
+                          >
+                            {pr.orders?.order_no || "View Order"}
+                          </Link>
+                        ) : (
+                          <span className="font-sans text-slate-400 italic">
+                            General stock
                           </span>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      {pr.quantity} units
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {pr.expected_date ? (
+                      </TableCell>
+                      <TableCell>{pr.profiles?.full_name || "Staff"}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={pr.status} type="purchase" />
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-3.5 w-3.5 opacity-60" />
-                          {new Date(pr.expected_date).toLocaleDateString()}
+                          <Button
+                            render={<Link to={`/purchase-requests/${pr.id}`} />}
+                            variant="ghost"
+                            size="sm"
+                            className="flex items-center gap-1 rounded-xl"
+                          >
+                            Details
+                            <ArrowUpRight className="h-4 w-4" />
+                          </Button>
+
+                          {/* Manager controls */}
+                          {canApprove && (
+                            <div className="flex gap-1">
+                              {pr.status === "requested" && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    title="Approve & Order"
+                                    onClick={() =>
+                                      updateStatusMutation.mutate({
+                                        prId: pr.id,
+                                        nextStatus: "ordered",
+                                      })
+                                    }
+                                    className="h-7 w-7 rounded-lg text-amber-500 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/20"
+                                  >
+                                    <Truck className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    title="Reject"
+                                    onClick={() =>
+                                      updateStatusMutation.mutate({
+                                        prId: pr.id,
+                                        nextStatus: "cancelled",
+                                      })
+                                    }
+                                    className="h-7 w-7 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20"
+                                  >
+                                    <XCircle className="h-3.5 w-3.5" />
+                                  </Button>
+                                </>
+                              )}
+
+                              {pr.status === "ordered" && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title="Mark Received"
+                                  onClick={() =>
+                                    updateStatusMutation.mutate({
+                                      prId: pr.id,
+                                      nextStatus: "received",
+                                    })
+                                  }
+                                  className="h-7 w-7 rounded-lg text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/20"
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-primary">
-                      {pr.order_id ? (
-                        <Link
-                          to={`/orders/${pr.order_id}`}
-                          className="hover:underline"
-                        >
-                          {pr.orders?.order_no || "View Order"}
-                        </Link>
-                      ) : (
-                        <span className="font-sans text-slate-400 italic">
-                          General stock
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {pr.profiles?.full_name || "Staff"}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={pr.status} type="purchase" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          render={<Link to={`/purchase-requests/${pr.id}`} />}
-                          variant="ghost"
-                          size="sm"
-                          className="flex items-center gap-1 rounded-xl"
-                        >
-                          Details
-                          <ArrowUpRight className="h-4 w-4" />
-                        </Button>
-
-                        {/* Manager controls */}
-                        {canApprove && (
-                          <div className="flex gap-1">
-                            {pr.status === "requested" && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  title="Approve & Order"
-                                  onClick={() =>
-                                    updateStatusMutation.mutate({
-                                      prId: pr.id,
-                                      nextStatus: "ordered",
-                                    })
-                                  }
-                                  className="h-7 w-7 rounded-lg text-amber-500 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/20"
-                                >
-                                  <Truck className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  title="Reject"
-                                  onClick={() =>
-                                    updateStatusMutation.mutate({
-                                      prId: pr.id,
-                                      nextStatus: "cancelled",
-                                    })
-                                  }
-                                  className="h-7 w-7 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20"
-                                >
-                                  <XCircle className="h-3.5 w-3.5" />
-                                </Button>
-                              </>
-                            )}
-
-                            {pr.status === "ordered" && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title="Mark Received"
-                                onClick={() =>
-                                  updateStatusMutation.mutate({
-                                    prId: pr.id,
-                                    nextStatus: "received",
-                                  })
-                                }
-                                className="h-7 w-7 rounded-lg text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/20"
-                              >
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           )}
         </div>
-        
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-slate-200 p-4 dark:border-slate-800">
-            <span className="text-xs text-muted-foreground">
-              Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCount)} of {totalCount} entries
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages >5 ? 5 : totalPages }).map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setPage(i + 1)}
-                    className={`h-8 w-8 rounded-lg text-xs font-semibold ${
-                      page === i + 1
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
+          <PaginationUI
+            page={page}
+            setPage={setPage}
+            totalCount={totalCount}
+            pageSize={pageSize}
+            setPageSize={setPageSize}
+          />
         )}
       </div>
-
-      </div>
-    // </div>
+    </div>
   )
 }
 

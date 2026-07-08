@@ -23,6 +23,14 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 export const PurchaseRequestDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -46,7 +54,8 @@ export const PurchaseRequestDetail: React.FC = () => {
           `
           *,
           orders (order_no),
-          profiles (full_name)
+          profiles (full_name),
+          purchase_request_items (*)
         `
         )
         .eq("id", id)
@@ -188,32 +197,33 @@ export const PurchaseRequestDetail: React.FC = () => {
 
       // If marked as received, increment product stock if match exists
       if (nextStatus === "received") {
-        const matchProduct = products.find(
-          (p) => p.name.toLowerCase() === pr.product_name.toLowerCase()
-        )
-        if (matchProduct) {
-          const { error: stockErr } = await supabase
-            .from("products")
-            .update({
-              stock_quantity: matchProduct.stock_quantity + pr.quantity,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", matchProduct.id)
-          if (stockErr) throw stockErr
-
-          // Log to audit log
-          await supabase.from("audit_log").insert([
-            {
-              actor_id: profile?.id,
-              action: `Received PR-${pr.request_no}. Auto-incremented stock for ${matchProduct.name} by ${pr.quantity}`,
-              entity_type: "products",
-              entity_id: matchProduct.id,
-            },
-          ])
-          toast.success(
-            `Inventory stock for ${matchProduct.name} auto-incremented!`
+        const prItems = pr.purchase_request_items || []
+        for (const item of prItems) {
+          const matchProduct = products.find(
+            (p) => p.name.toLowerCase() === item.product_name.toLowerCase()
           )
+          if (matchProduct) {
+            const { error: stockErr } = await supabase
+              .from("products")
+              .update({
+                stock_quantity: matchProduct.stock_quantity + item.quantity,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", matchProduct.id)
+            if (stockErr) throw stockErr
+
+            // Log to audit log
+            await supabase.from("audit_log").insert([
+              {
+                actor_id: profile?.id,
+                action: `Received PR-${pr.request_no}. Auto-incremented stock for ${matchProduct.name} by ${item.quantity}`,
+                entity_type: "products",
+                entity_id: matchProduct.id,
+              },
+            ])
+          }
         }
+        toast.success("Inventory stock for all items auto-incremented!")
       }
 
       // Log PR update
@@ -353,35 +363,44 @@ export const PurchaseRequestDetail: React.FC = () => {
                 Product & Request Details
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
-                <div>
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Product Name
-                  </h4>
-                  <p className="mt-1 text-base font-semibold ">
-                    {pr.product_name}
-                  </p>
+            <CardContent className="p-6 space-y-6">
+              {/* Items Table */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                  <Box className="h-4 w-4" /> Requested Items
+                </h4>
+                <div className="overflow-x-auto rounded-xl border bg-card">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="font-semibold text-xs">Product Name</TableHead>
+                        <TableHead className="font-semibold text-xs">Specifications</TableHead>
+                        <TableHead className="font-semibold text-xs w-28">Quantity</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pr.purchase_request_items && pr.purchase_request_items.length > 0 ? (
+                        pr.purchase_request_items.map((item: any) => (
+                          <TableRow key={item.id}>
+                            <TableCell className="font-semibold text-xs">{item.product_name}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{item.specs || "-"}</TableCell>
+                            <TableCell className="font-semibold text-xs">{item.quantity} units</TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center py-4 text-xs text-muted-foreground">
+                            No items found in this request
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
-                
-                <div>
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Quantity Required
-                  </h4>
-                  <p className="mt-1 text-base font-semibold ">
-                    {pr.quantity} units
-                  </p>
-                </div>
+              </div>
 
-                <div className="md:col-span-2">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Specifications
-                  </h4>
-                  <p className="mt-1 text-sm  p-3 rounded-lg border bg-muted">
-                    {pr.specs || "No specific requirements provided."}
-                  </p>
-                </div>
-
+              {/* Metadata Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 pt-4 border-t">
                 <div>
                   <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                     <User className="h-3 w-3" /> Requested By

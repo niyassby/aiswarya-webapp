@@ -88,7 +88,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           qrbox: (width, height) => {
             // Rectangular box for horizontal barcodes
             const boxWidth = Math.min(width * 0.8, 300);
-            const boxHeight = Math.min(height * 0.4, 150);
+            const boxHeight = Math.min(height * 0.5, 150);
             return { width: boxWidth, height: boxHeight };
           },
         },
@@ -135,32 +135,29 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md overflow-hidden bg-slate-900 border-slate-800 text-white rounded-2xl">
-        <DialogHeader className="pb-2 border-b border-slate-800">
-          <DialogTitle className="text-white flex items-center gap-2">
+      <DialogContent >
+        <DialogHeader className="pb-2 border-b ">
+          <DialogTitle className=" flex items-center gap-2">
             <Camera className="h-5 w-5 text-primary" />
             Scan Product Barcode
           </DialogTitle>
         </DialogHeader>
 
-        <div className="relative flex flex-col items-center justify-center p-4 bg-slate-950 rounded-xl min-h-[300px]">
+        <div className="relative flex flex-col items-center justify-center  min-h-[300px]">
           {/* Scanning Feed target element */}
           <div
             id={elementId}
             className="w-full max-w-sm overflow-hidden rounded-lg bg-black"
-            style={{ minHeight: "240px" }}
+            style={{ minHeight: "250px" }}
           />
 
           {/* Viewfinder overlay with animated scanning line */}
           {scanning && !error && (
             <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-              <div className="w-[280px] h-[120px] border-2 border-primary/50 rounded-lg relative overflow-hidden bg-white/5 backdrop-brightness-50 shadow-[0_0_15px_rgba(var(--primary),0.2)]">
+              <div className="w-[280px] h-[120px] border border-primary/50 rounded-lg relative overflow-hidden bg-white/5 backdrop-brightness-50 shadow-[0_0_10px_rgba(var(--primary),0.2)]">
                 {/* Horizontal scanning laser line */}
-                <div className="absolute left-0 w-full h-[2px] bg-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-[scan_2s_ease-in-out_infinite]" />
+                <div className="absolute left-0 w-full h-px bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-[scan_2s_ease-in-out_infinite]" />
               </div>
-              <span className="text-[10px] uppercase font-semibold text-slate-400 mt-4 tracking-widest bg-slate-950/80 px-2 py-0.5 rounded">
-                Align barcode within frame
-              </span>
             </div>
           )}
 
@@ -178,14 +175,13 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         </div>
 
         {/* Controls */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs text-slate-400">
+        <div className="flex items-center justify-between pt-2  text-xs text-slate-400">
           <div>
             {cameras.length > 1 && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={switchCamera}
-                className="text-white border-slate-800 bg-slate-900 rounded-xl flex items-center gap-1.5"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 Switch Camera ({cameras.length})
@@ -194,10 +190,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           </div>
           <DialogClose render={
             <Button
-              variant="ghost"
+              variant="destructive"
               size="sm"
               onClick={stopScanning}
-              className="text-slate-400 hover:text-white rounded-xl"
             >
               Close
             </Button>

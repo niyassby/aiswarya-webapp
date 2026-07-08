@@ -12,6 +12,7 @@ interface StatusBadgeProps {
 const statusConfig: Record<BadgeType, Record<string, { label: string; className: string }>> = {
   order: {
     enquiry: { label: "Enquiry", className: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
+    quotation: { label: "Quotation", className: "bg-purple-500/10 text-purple-500 border-purple-500/20" },
     invoice: { label: "Invoice", className: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20" },
     purchase: { label: "Purchase", className: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
     completed: { label: "Completed", className: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" },

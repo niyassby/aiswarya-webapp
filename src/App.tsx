@@ -14,6 +14,7 @@ import OrderList from "@/features/orders/OrderList";
 import OrderCreate from "@/features/orders/OrderCreate";
 import OrderDetail from "@/features/orders/OrderDetail";
 import PurchaseRequestList from "@/features/purchase-requests/PurchaseRequestList";
+import PurchaseRequestCreate from "@/features/purchase-requests/PurchaseRequestCreate";
 import PurchaseRequestDetail from "@/features/purchase-requests/PurchaseRequestDetail";
 import ComplaintList from "@/features/complaints/ComplaintList";
 import ComplaintDetail from "@/features/complaints/ComplaintDetail";
@@ -106,6 +107,16 @@ export function App() {
             <RoleGuard allow={["sales_admin", "manager", "super_admin"]}>
               <AppLayout>
                 <PurchaseRequestList />
+              </AppLayout>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/purchase-requests/create"
+          element={
+            <RoleGuard allow={["sales_admin", "manager", "super_admin"]}>
+              <AppLayout>
+                <PurchaseRequestCreate />
               </AppLayout>
             </RoleGuard>
           }

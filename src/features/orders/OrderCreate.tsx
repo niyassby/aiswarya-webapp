@@ -26,9 +26,13 @@ import {
   ShoppingBag,
   Info,
   DollarSign,
+  Minus,
 } from "lucide-react"
+import { ButtonGroup } from "@/components/ui/button-group"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { OrderDrawer } from "./OrderDrawer"
 
-interface CheckoutItem {
+export interface CheckoutItem {
   id: string // Product ID or temp random ID for custom items
   item_name: string
   barcode: string | null
@@ -53,6 +57,7 @@ export const OrderCreate: React.FC = () => {
   const [productSearch, setProductSearch] = useState("")
   const [showProductDropdown, setShowProductDropdown] = useState(false)
   const [scannerOpen, setScannerOpen] = useState(false)
+  const isMobile = useIsMobile()
 
   // Pre-select customer from query param
   const paramCustomerId = searchParams.get("customer_id")
@@ -325,6 +330,7 @@ export const OrderCreate: React.FC = () => {
                   Camera Scan
                 </Button>
 
+                {isMobile ? <OrderDrawer cart={cart} setCart={setCart} /> :
                 <Button
                   type="button"
                   variant="outline"
@@ -334,6 +340,7 @@ export const OrderCreate: React.FC = () => {
                   <Plus className="h-4 w-4" />
                   Custom Row
                 </Button>
+                }
               </div>
             </CardHeader>
 
@@ -525,10 +532,10 @@ export const OrderCreate: React.FC = () => {
                               <span className="text-xs font-medium">₹{item.unit_price.toFixed(2)}</span>
                             )}
                           </TableCell> */}
-                          <TableCell >
+                          {/* <TableCell >
                             <Input
                               type="number"
-                              min="1"
+                              // min="1"
                               value={item.quantity}
                               onChange={(e) =>
                                 handleUpdateItem(
@@ -539,6 +546,30 @@ export const OrderCreate: React.FC = () => {
                               }
                               className=""
                             />
+                          </TableCell> */}
+                          <TableCell >
+                            <ButtonGroup>
+                              <Button size={'icon'} onClick={()=> handleUpdateItem(item.id, "quantity",  Math.max(1,item.quantity - 1))} variant="outline">
+                                <Minus />
+                              </Button>
+                              <Input
+                              type="number"
+                              // min="1"
+                              value={item.quantity}
+                              onChange={(e) =>
+                                handleUpdateItem(
+                                  item.id,
+                                  "quantity",
+                                  Math.max(1, Number(e.target.value))
+                                )
+                              }
+                              className="min-w-10 px-1 text-center appearance-none"
+                            />
+                              <Button size={'icon'} onClick={()=> handleUpdateItem(item.id, "quantity", item.quantity + 1)} variant="outline">
+                                <Plus />
+                              </Button>
+                            </ButtonGroup>
+                            
                           </TableCell>
                           {/* <TableCell className="p-3 text-right font-bold text-xs">
                             ₹{(item.quantity * item.unit_price).toFixed(2)}

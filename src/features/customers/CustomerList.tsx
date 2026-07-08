@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -30,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Search, UserPlus, Phone, Mail, ChevronRight, Users2 } from "lucide-react";
+import PaginationUI from "@/components/PaginationUI";
 
 // Form Schema
 const customerSchema = z.object({
@@ -48,9 +49,20 @@ export const CustomerList: React.FC = () => {
   const { isSalesAdmin, isSuperAdmin } = useRole();
   const { profile } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
+  const [debounceSearchTerm,setDebounceSearchTerm]=useState("")
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [page,setPage]=useState(1)
+  const [limit,setLimit]=useState(10)
 
   const canCreate = isSalesAdmin || isSuperAdmin;
+
+  useEffect(()=>{
+    const timer=setTimeout(()=>{
+      setDebounceSearchTerm(searchTerm)
+      setPage(1)
+    },300)
+    return()=>clearTimeout(timer)
+  },[searchTerm])
 
   // React Hook Form
   const {
@@ -71,17 +83,29 @@ export const CustomerList: React.FC = () => {
   });
 
   // Query to fetch customers
-  const { data: customers = [], isLoading } = useQuery({
-    queryKey: ["customers"],
+  const { data: {customers = [] , totalCount = 0} = {}, isLoading } = useQuery({
+    queryKey: ["customers", page,debounceSearchTerm],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("customers")
-        .select("*")
-        .order("name", { ascending: true });
+        let query = supabase
+          .from("customers")
+          .select("*", { count: "exact" })
+          .order("name", { ascending: true });
+
+        if (debounceSearchTerm) {
+          query = query.or(
+            `name.ilike.%${debounceSearchTerm}%,phone.ilike.%${debounceSearchTerm}%,tax_id.ilike.%${debounceSearchTerm}%`
+          );
+        }
+
+        const { data, error, count } = await query.range(
+          (page - 1) * limit,
+          page * limit - 1
+        );
       if (error) throw error;
-      return data || [];
+      return {customers:data || [] , totalCount: count || 0}
     },
   });
+  const totalPages = Math.ceil(totalCount / limit);
 
   // Mutation to create customer
   const createCustomerMutation = useMutation({
@@ -115,13 +139,7 @@ export const CustomerList: React.FC = () => {
     createCustomerMutation.mutate(values);
   };
 
-  // Filter customers by search term
-  const filteredCustomers = customers.filter(
-    (c) =>
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (c.phone && c.phone.includes(searchTerm)) ||
-      (c.tax_id && c.tax_id.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  
 
   return (
     <div className="space-y-6">
@@ -203,7 +221,7 @@ export const CustomerList: React.FC = () => {
           </div>
           <div>
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Customers</span>
-            <h3 className="text-2xl font-bold mt-0.5">{customers.length}</h3>
+            <h3 className="text-2xl font-bold mt-0.5">{totalCount}</h3>
           </div>
         </div>
       </div>
@@ -228,7 +246,7 @@ export const CustomerList: React.FC = () => {
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
               <p className="text-sm text-muted-foreground">Loading customers directory...</p>
             </div>
-          ) : filteredCustomers.length === 0 ? (
+          ) : customers.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               No customers found. {searchTerm ? "Try adjusting your filters." : "Create one to get started."}
             </div>
@@ -244,7 +262,7 @@ export const CustomerList: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.map((customer) => (
+                {customers.map((customer) => (
                   <TableRow key={customer.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/10">
                     <TableCell className="font-semibold text-slate-900 dark:text-white">
                       <Link to={`/customers/${customer.id}`} className="hover:underline">
@@ -282,7 +300,19 @@ export const CustomerList: React.FC = () => {
               </TableBody>
             </Table>
           )}
+          
+          
+          {totalPages > 1 && (
+          <PaginationUI
+            page={page}
+            setPage={setPage}
+            totalCount={totalCount}
+            pageSize={limit}
+            setPageSize={setLimit}
+          />
+        )}
         </div>
+
       </div>
     </div>
   );

@@ -2,24 +2,30 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card } from '@/components/ui/card'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/utils/supabase'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 
 function AuditTab() {
-     const { data: auditLogs = [], isLoading: auditLoading } = useQuery({
-    queryKey: ["admin-audit-logs"],
+  const [page,setPage]=useState(1)
+  const limit = 10
+     const { data:  {auditData = [], totalCount = 0 } = {}, isLoading: auditLoading } = useQuery({
+    queryKey: ["admin-audit-logs", page],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from("audit_log")
-        .select("*")
+        .select("*", { count: "exact" })
+        .range((page - 1) * limit, page * limit - 1)
         .order("created_at", { ascending: false })
       if (error) throw error
       console.log(error);
       
-      return data || []
+      return {auditData:data || [], totalCount:count|| 0}
     },
   })
+  const totalPages = Math.ceil(totalCount / limit);
   return (
     <div>
-        <Card className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800/80 dark:bg-slate-900">
+        <Card >
           <div className="overflow-x-auto">
             {auditLoading ? (
               <div className="py-12 text-center text-xs text-muted-foreground">
@@ -28,7 +34,7 @@ function AuditTab() {
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/50 dark:bg-slate-950/20">
+                  <TableRow >
                     <TableHead className="font-semibold">Operator</TableHead>
                     <TableHead className="font-semibold">
                       Action Description
@@ -39,10 +45,9 @@ function AuditTab() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {auditLogs.map((log) => (
+                  {auditData.map((log) => (
                     <TableRow
                       key={log.id}
-                      className="text-xs hover:bg-slate-50/50 dark:hover:bg-slate-950/10"
                     >
                       <TableCell className="font-semibold">
                         {log.profiles?.full_name || "System"}
@@ -68,6 +73,46 @@ function AuditTab() {
               </Table>
             )}
           </div>
+          {totalPages > 1 && (
+                    <div className="flex items-center justify-between border-t border-slate-200 p-4 dark:border-slate-800">
+                      <span className="text-xs text-muted-foreground">
+                        Showing {(page - 1) * limit + 1} to {Math.min(page * limit, totalCount)} of {totalCount} entries
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPage((p) => Math.max(1, p - 1))}
+                          disabled={page === 1}
+                        >
+                          Previous
+                        </Button>
+                        <div className="flex items-center gap-1 max-md:hidden">
+                          {Array.from({ length: totalPages > 5 ? 5 : totalPages }).map((_, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setPage(i + 1)}
+                              className={`h-8 w-8 rounded-lg text-xs font-semibold ${
+                                page === i + 1
+                                  ? "bg-primary text-primary-foreground"
+                                  : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800"
+                              }`}
+                            >
+                              {i + 1}
+                            </button>
+                          ))}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={page === totalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
         </Card>
     </div>
   )

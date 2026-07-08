@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "@/features/auth/useAuth";
-import { useRole } from "@/hooks/useRole";
+import React, { useEffect, useRef, useState } from "react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { useAuth } from "@/features/auth/useAuth"
+import { useRole } from "@/hooks/useRole"
 import logo from "../assets/aiswarya.svg"
 import {
   LayoutDashboard,
@@ -16,23 +16,28 @@ import {
   ShieldCheck,
   ChevronRight,
   Package,
-  PanelLeft
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+  PanelLeft,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface NavItem {
-  name: string;
-  path: string;
-  icon: React.ComponentType<any>;
-  roles: string[];
+  name: string
+  path: string
+  icon: React.ComponentType<any>
+  roles: string[]
 }
 
-export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, profile, logout } = useAuth();
-  const { hasAnyRole, isSuperAdmin } = useRole();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
+export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const { user, profile, logout } = useAuth()
+  const { hasAnyRole, isSuperAdmin } = useRole()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isMobile = useIsMobile()
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   const navItems: NavItem[] = [
     {
@@ -47,12 +52,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       icon: Users,
       roles: ["sales_admin", "accounts", "manager", "super_admin"],
     },
-    {
-      name: "Products Catalog",
-      path: "/products",
-      icon: Package,
-      roles: ["sales_admin", "accounts", "manager", "super_admin"],
-    },
+    
     {
       name: "Sales Orders",
       path: "/orders",
@@ -72,34 +72,50 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       roles: ["sales_admin", "accounts", "manager", "super_admin"],
     },
     {
+      name: "Products Catalog",
+      path: "/products",
+      icon: Package,
+      roles: ["sales_admin", "accounts", "manager", "super_admin"],
+    },
+    {
       name: "User Management",
       path: "/admin",
       icon: Settings,
       roles: ["super_admin"],
     },
-  ];
+  ]
 
-  const allowedNavItems = navItems.filter((item) => hasAnyRole(item.roles as any));
+  const allowedNavItems = navItems.filter((item) =>
+    hasAnyRole(item.roles as any)
+  )
 
   const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
+    await logout()
+    navigate("/login")
+  }
 
   const getIsActive = (path: string) => {
-    if(path === "/"){
+    if (path === "/") {
       return location.pathname === path
     }
     return location.pathname.startsWith(path)
   }
 
+  useEffect(() => {
+    const scrollToTop = () => {
+      if(scrollRef.current){
+        scrollRef.current.scrollTop = 0
+      }
+    }
+    scrollToTop()
+  }, [location.pathname])
 
   return (
-    <div className="flex h-svh w-screen bg-background overflow-hidden font-sans">
+    <div className="flex h-svh w-screen overflow-hidden bg-background font-sans">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-foreground/60 backdrop-blur-sm lg:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 z-40 animate-in bg-foreground/60 backdrop-blur-sm duration-200 fade-in lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -111,14 +127,16 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         }`}
       >
         {/* Sidebar Header */}
-        <div className="flex h-16 items-center justify-between px-6  border-b">
+        <div className="flex h-16 items-center justify-between border-b px-6">
           <div className="flex items-center gap-2">
-            <div className=" bg-muted p-1.5 rounded-xl">
+            <div className="rounded-xl bg-muted p-1.5">
               <img className="w-8" src={logo} alt="logo" />
             </div>
             <div className="flex flex-col gap-0.5">
-              <h1 className="text-lg font-semibold leading-none">Aiswarya</h1>
-              <h1 className="text-xs tracking-[2px] leading-none text-muted-foreground">Home</h1>
+              <h1 className="text-lg leading-none font-semibold">Aiswarya</h1>
+              <h1 className="text-xs leading-none tracking-[2px] text-muted-foreground">
+                Home
+              </h1>
             </div>
           </div>
           <Button
@@ -134,8 +152,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         {/* Sidebar Navigation */}
         <nav className="flex-1 overflow-y-auto px-4 py-6">
           {allowedNavItems.map((item) => {
-            const isActive = getIsActive(item.path);
-            const Icon = item.icon;
+            const isActive = getIsActive(item.path)
+            const Icon = item.icon
             return (
               <Link
                 key={item.name}
@@ -148,34 +166,38 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon strokeWidth={1.5} className={`size-4.5 ${isActive ? "text-primary-foreground" : "text"}`} />
+                  <Icon
+                    strokeWidth={1.5}
+                    className={`size-4.5 ${isActive ? "text-primary-foreground" : "text"}`}
+                  />
                   <span className="text-sm font-medium">{item.name}</span>
                 </div>
                 {isActive && <ChevronRight className="h-4 w-4 opacity-80" />}
               </Link>
-            );
+            )
           })}
         </nav>
 
         {/* Sidebar User Footer */}
-        <div className="p-4 border-t space-y-4">
-          <div className="flex items-center gap-3 ">
+        <div className="space-y-4 border-t p-4">
+          <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
               <User className="h-5 w-5" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">
                 {profile?.full_name || "User Account"}
               </p>
-              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {user?.email}
+              </p>
             </div>
           </div>
-
 
           <Button
             onClick={handleLogout}
             variant="destructive"
-            className={'w-full'}
+            className={"w-full"}
           >
             <LogOut className="h-4 w-4" />
             <span>Sign Out</span>
@@ -183,36 +205,64 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         </div>
       </aside>
 
+      {isMobile && (
+        <nav className="fixed bottom-0 z-30 w-full border-t bg-background py-4 ">
+          <div className="flex items-center justify-between   px-6">
+            {allowedNavItems.map((item) => {
+              const isActive = getIsActive(item.path)
+              const Icon = item.icon
+              return (
+                <Button
+                  variant={isActive ? "default" : "ghost"}
+                  size={'icon-lg'}
+                  className={'size-11'}
+                  render={
+                    <Link
+                      key={item.name}
+                      to={item.path}
+                      onClick={() => setSidebarOpen(false)}
+                    />
+                  }
+                >
+                  <Icon strokeWidth={1.6} className="size-4.5" />
+                </Button>
+              )
+            })}
+          </div>
+        </nav>
+      )}
+
       {/* Main Content Area */}
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Navbar */}
-        <header className="flex h-16 items-center justify-between px-6 border-b  bg-background backdrop-blur-md shrink-0">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background px-6 backdrop-blur-md">
           <div className="flex items-center gap-2">
             <Button
               variant="secondary"
               size="icon"
-              className="lg:hidden  rounded-lg"
+              className="rounded-lg lg:hidden"
               onClick={() => setSidebarOpen(true)}
             >
               <PanelLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h2 className="text-sm text-muted-foreground font-medium">
+              <h2 className="text-sm font-medium text-muted-foreground">
                 {location.pathname === "/"
                   ? "Dashboard Overview"
-                  : navItems.find((n) => n.path === location.pathname)?.name || "Management System"}
+                  : navItems.find((n) => n.path === location.pathname)?.name ||
+                    "Management System"}
               </h2>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             {isSuperAdmin && (
-              <span className="hidden md:flex items-center gap-1.5 rounded-full border border-rose-500/20 bg-rose-500/5 px-2.5 py-0.5 text-xs font-semibold text-rose-500">
+              <span className="hidden items-center gap-1.5 rounded-full border border-rose-500/20 bg-rose-500/5 px-2.5 py-0.5 text-xs font-semibold text-rose-500 md:flex">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Super Admin Access
               </span>
             )}
-            <div className="text-xs text-muted-foreground hidden sm:block">
+            <div className="hidden text-xs text-muted-foreground sm:block">
               {new Date().toLocaleDateString("en-US", {
                 weekday: "short",
                 year: "numeric",
@@ -224,14 +274,13 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         </header>
 
         {/* Content Page Container */}
-        <main className="flex-1 overflow-y-auto bg-background p-6 md:p-8">
-          <div className="mx-auto max-w-7xl">
-            {children}
-          </div>
+        <main ref={scrollRef} className="flex-1 overflow-y-auto bg-background p-6 md:p-8">
+          <div className="mx-auto max-w-7xl">{children}</div>
+          {isMobile && <div className="h-18"></div>}
         </main>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default AppLayout;
+export default AppLayout

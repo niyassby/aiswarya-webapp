@@ -47,6 +47,7 @@ import {
 const items = [
   { label: "Select Status", value: null },
   { label: "Enquiry", value: "enquiry" },
+  { label: "Quotation", value: "quotation" },
   { label: "Invoice", value: "invoice" },
   { label: "Purchase", value: "purchase" },
   { label: "Completed", value: "completed" },
@@ -118,7 +119,7 @@ export const OrderDetail: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("purchase_requests")
-        .select("*")
+        .select("*, purchase_request_items (*)")
         .eq("order_id", id)
         .order("created_at", { ascending: false })
       if (error) throw error
@@ -228,22 +229,36 @@ export const OrderDetail: React.FC = () => {
   // Mutation: Create Purchase Request
   const createPrMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedPrItem) return
+      // 1. Insert PR
+      const { data: prData, error: prError } = await supabase
+        .from("purchase_requests")
+        .insert([
+          {
+            order_id: id,
+            supplier_info: prSupplier || null,
+            requested_by: profile?.id,
+            expected_date: prExpectedDate || null,
+            status: "requested",
+          },
+        ])
+        .select()
+        .single()
+      if (prError) throw prError
 
-      const { data, error } = await supabase.from("purchase_requests").insert([
-        {
-          order_id: id,
-          product_name: selectedPrItem.item_name,
-          specs: selectedPrItem.specs,
-          quantity: prQuantity,
-          supplier_info: prSupplier || null,
-          requested_by: profile?.id,
-          expected_date: prExpectedDate || null,
-          status: "requested",
-        },
-      ])
-      if (error) throw error
-      return data
+      // 2. Insert Item
+      const { error: itemError } = await supabase
+        .from("purchase_request_items")
+        .insert([
+          {
+            purchase_request_id: prData.id,
+            product_name: selectedPrItem.item_name,
+            specs: selectedPrItem.specs,
+            quantity: prQuantity,
+          },
+        ])
+      if (itemError) throw itemError
+
+      return prData
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -290,7 +305,7 @@ export const OrderDetail: React.FC = () => {
   )
 
   // Stepper timeline configurations
-  const pipelineStatuses = ["enquiry", "invoice", "purchase", "completed"]
+  const pipelineStatuses = ["enquiry", "quotation", "invoice", "purchase", "completed"]
   const currentStatusIndex = pipelineStatuses.indexOf(order.status)
   const isCancelled = order.status === "cancelled"
 
@@ -510,11 +525,16 @@ export const OrderDetail: React.FC = () => {
                         className="flex items-center justify-between p-4 text-xs hover:bg-slate-50/50 dark:hover:bg-slate-950/10"
                       >
                         <div>
-                          <span className="block font-mono text-[11px] font-semibold">
+                          <Link
+                            to={`/purchase-requests/${pr.id}`}
+                            className="block font-mono text-[11px] font-semibold text-primary hover:underline"
+                          >
                             {pr.request_no}
-                          </span>
-                          <span className="mt-0.5 block text-[10px] text-slate-600 dark:text-slate-400">
-                            {pr.product_name} (x{pr.quantity})
+                          </Link>
+                          <span className="mt-0.5 block text-[10px] text-slate-650 dark:text-slate-400">
+                            {pr.purchase_request_items?.[0]
+                              ? `${pr.purchase_request_items[0].product_name} (x${pr.purchase_request_items[0].quantity})${pr.purchase_request_items.length > 1 ? ` (+${pr.purchase_request_items.length - 1} more)` : ""}`
+                              : "No items"}
                           </span>
                         </div>
                         <StatusBadge

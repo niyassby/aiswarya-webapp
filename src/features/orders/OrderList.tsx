@@ -25,10 +25,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import PaginationUI from "@/components/PaginationUI"
 
 const items = [
   { label: "All Statuses", value: "all" },
   { label: "Enquiry", value: "enquiry" },
+  { label: "Quotation", value: "quotation" },
   { label: "Invoice", value: "invoice" },
   { label: "Purchase", value: "purchase" },
   { label: "Completed", value: "completed" },
@@ -45,7 +47,7 @@ export const OrderList: React.FC = () => {
   const canCreate = isSalesAdmin || isSuperAdmin
 
   const [page, setPage] = useState(1)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -308,44 +310,13 @@ export const OrderList: React.FC = () => {
         
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t  p-4 ">
-            <span className="text-xs text-muted-foreground">
-              Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCount)} of {totalCount} entries
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages > 5 ? 5 : totalPages }).map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setPage(i + 1)}
-                    className={`h-8 w-8 rounded-lg text-xs font-semibold ${
-                      page === i + 1
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
+          <PaginationUI
+            page={page}
+            setPage={setPage}
+            totalCount={totalCount}
+            pageSize={pageSize}
+            setPageSize={setPageSize}
+          />
         )}
       </div>
     </div>

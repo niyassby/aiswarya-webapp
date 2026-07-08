@@ -7,7 +7,7 @@ create extension if not exists pgcrypto;
 
 -- 1. ENUMS
 create type app_role as enum ('sales_admin', 'accounts', 'manager', 'super_admin');
-create type order_status as enum ('enquiry', 'invoice', 'purchase', 'completed', 'cancelled');
+create type order_status as enum ('enquiry', 'quotation', 'invoice', 'purchase', 'completed', 'cancelled');
 create type purchase_status as enum ('requested', 'ordered', 'received', 'fulfilled', 'cancelled');
 create type complaint_status as enum ('open', 'assigned', 'in_progress', 'resolved', 'closed');
 create type complaint_priority as enum ('low', 'medium', 'high', 'urgent');
@@ -129,15 +129,22 @@ create table purchase_requests (
   id uuid primary key default gen_random_uuid(),
   request_no text unique not null default next_request_no(),
   order_id uuid references orders(id) on delete set null,
-  product_name text not null,
-  specs text,
-  quantity integer not null default 1,
   supplier_info text,
   status purchase_status not null default 'requested',
   requested_by uuid references profiles(id),
   expected_date date,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+-- Purchase Request Items (Multiple items per Purchase Request)
+create table purchase_request_items (
+  id uuid primary key default gen_random_uuid(),
+  purchase_request_id uuid not null references purchase_requests(id) on delete cascade,
+  product_name text not null,
+  specs text,
+  quantity integer not null default 1,
+  created_at timestamptz not null default now()
 );
 
 -- Purchase Request Comments
@@ -214,6 +221,7 @@ alter table orders enable row level security;
 alter table order_items enable row level security;
 alter table order_status_history enable row level security;
 alter table purchase_requests enable row level security;
+alter table purchase_request_items enable row level security;
 alter table purchase_request_comments enable row level security;
 alter table complaints enable row level security;
 alter table complaint_comments enable row level security;
@@ -314,6 +322,20 @@ create policy "Allow PR creation to sales_admin, manager, super_admin" on purcha
 
 create policy "Allow PR updates to managers and super admins" on purchase_requests
   for update using (public.has_any_role('manager', 'super_admin'));
+
+-- PURCHASE REQUEST ITEMS Policies
+create policy "Allow reading purchase request items based on PR access" on purchase_request_items
+  for select using (
+    exists (
+      select 1 from public.purchase_requests
+      where purchase_requests.id = purchase_request_items.purchase_request_id
+    )
+  );
+
+create policy "Allow purchase request items modification to authorized roles" on purchase_request_items
+  for all using (
+    public.has_any_role('sales_admin', 'manager', 'super_admin')
+  );
 
 -- PURCHASE REQUEST COMMENTS Policies
 create policy "Allow comments view based on PR access" on purchase_request_comments

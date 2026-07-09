@@ -82,7 +82,7 @@ export const PurchaseRequestList: React.FC = () => {
         profile?.id,
         page,
         searchTerm,
-        statusFilter,
+        statusFilter,pageSize
       ],
       queryFn: async () => {
         if (!profile) return { purchaseRequests: [], totalCount: 0 }
@@ -214,7 +214,7 @@ export const PurchaseRequestList: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-3xl font-bold tracking-tight ">
             Purchase Requests
           </h1>
           <p className="text-muted-foreground">
@@ -225,7 +225,6 @@ export const PurchaseRequestList: React.FC = () => {
         {canCreate && (
           <Button
             render={<Link to="/purchase-requests/create" />}
-            className="flex items-center gap-2 rounded-xl shadow-md"
           >
             <Plus className="h-4 w-4" />
             Submit Request
@@ -234,7 +233,7 @@ export const PurchaseRequestList: React.FC = () => {
       </div>
 
       {/* Counters */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="flex items-center gap-4 rounded-2xl border bg-card p-5 shadow-sm">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500 dark:bg-blue-950/30">
             <Clock className="h-5 w-5" />
@@ -290,11 +289,10 @@ export const PurchaseRequestList: React.FC = () => {
                 setSearchTerm(e.target.value)
                 setPage(1)
               }}
-              className="rounded-xl pl-10"
+              className=" pl-10"
             />
           </div>
 
-          <div className="flex w-full items-center justify-center gap-2 sm:justify-end">
             <Select
               items={items}
               value={statusFilter}
@@ -303,7 +301,7 @@ export const PurchaseRequestList: React.FC = () => {
                 setPage(1)
               }}
             >
-              <SelectTrigger className="w-full max-w-48">
+              <SelectTrigger className="w-full md:max-w-45">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -317,7 +315,6 @@ export const PurchaseRequestList: React.FC = () => {
                 </SelectGroup>
               </SelectContent>
             </Select>
-          </div>
         </div>
 
         <div className="overflow-x-auto">

@@ -75,7 +75,7 @@ export const OrderList: React.FC = () => {
 
   // Fetch orders
   const { data: { orders = [], totalCount = 0 } = {}, isLoading } = useQuery({
-    queryKey: ["orders", user?.id, page, debouncedSearchTerm, statusFilter],
+    queryKey: ["orders", user?.id, page, debouncedSearchTerm, statusFilter, pageSize],
     queryFn: async () => {
       if (!user) return { orders: [], totalCount: 0 }
       let query = supabase
@@ -135,7 +135,6 @@ export const OrderList: React.FC = () => {
         {canCreate && (
           <Button
             render={<Link to="/orders/create" />}
-            className="flex items-center gap-2 rounded-xl shadow-md"
           >
             <Plus className="h-4 w-4" />
             New Sales Order
@@ -188,7 +187,7 @@ export const OrderList: React.FC = () => {
                 setSearchTerm(e.target.value)
                 setPage(1)
               }}
-              className="rounded-xl pl-10"
+              className="pl-10"
             />
           </div>
 

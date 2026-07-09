@@ -3,18 +3,18 @@ import { Card } from '@/components/ui/card'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/utils/supabase'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import PaginationUI from '@/components/PaginationUI'
 
 function AuditTab() {
   const [page,setPage]=useState(1)
-  const limit = 10
+  const [pageSize,setPageSize]=useState(10)
      const { data:  {auditData = [], totalCount = 0 } = {}, isLoading: auditLoading } = useQuery({
-    queryKey: ["admin-audit-logs", page],
+    queryKey: ["admin-audit-logs", page,pageSize],
     queryFn: async () => {
       const { data, error, count } = await supabase
         .from("audit_log")
         .select("*", { count: "exact" })
-        .range((page - 1) * limit, page * limit - 1)
+        .range((page - 1) * pageSize, page * pageSize - 1)
         .order("created_at", { ascending: false })
       if (error) throw error
       console.log(error);
@@ -22,7 +22,7 @@ function AuditTab() {
       return {auditData:data || [], totalCount:count|| 0}
     },
   })
-  const totalPages = Math.ceil(totalCount / limit);
+  const totalPages = Math.ceil(totalCount / pageSize);
   return (
     <div>
         <Card >
@@ -74,45 +74,14 @@ function AuditTab() {
             )}
           </div>
           {totalPages > 1 && (
-                    <div className="flex items-center justify-between border-t border-slate-200 p-4 dark:border-slate-800">
-                      <span className="text-xs text-muted-foreground">
-                        Showing {(page - 1) * limit + 1} to {Math.min(page * limit, totalCount)} of {totalCount} entries
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPage((p) => Math.max(1, p - 1))}
-                          disabled={page === 1}
-                        >
-                          Previous
-                        </Button>
-                        <div className="flex items-center gap-1 max-md:hidden">
-                          {Array.from({ length: totalPages > 5 ? 5 : totalPages }).map((_, i) => (
-                            <button
-                              key={i}
-                              onClick={() => setPage(i + 1)}
-                              className={`h-8 w-8 rounded-lg text-xs font-semibold ${
-                                page === i + 1
-                                  ? "bg-primary text-primary-foreground"
-                                  : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800"
-                              }`}
-                            >
-                              {i + 1}
-                            </button>
-                          ))}
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                          disabled={page === totalPages}
-                        >
-                          Next
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+          <PaginationUI
+            page={page}
+            setPage={setPage}
+            totalCount={totalCount}
+            pageSize={pageSize}
+            setPageSize={setPageSize}
+          />
+        )}
         </Card>
     </div>
   )

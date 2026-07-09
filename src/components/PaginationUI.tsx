@@ -37,15 +37,7 @@ function PaginationUI({
   }
   return (
     <div className="flex flex-col gap-2 border-t p-4 md:flex-row md:items-center md:justify-between">
-      <div>
-        <span className="text-xs text-muted-foreground">
-          {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCount)}{" "}
-          of <span className="font-medium text-foreground">{totalCount}</span>{" "}
-          records
-        </span>
-      </div>
-      <div className="">
-        <div className="flex items-center gap-2">
+      <div className="flex  items-center gap-2">
           <Select
             defaultValue={pageSize}
             onValueChange={(e) => {
@@ -53,10 +45,10 @@ function PaginationUI({
               setPage(1)
             }}
           >
-            <SelectTrigger size="sm" className="w-[100px]">
+            <SelectTrigger size="sm" className="w-20">
               <SelectValue placeholder="Per page" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className={'min-w-20'}>
               <SelectGroup>
                 {items.map((item) => (
                   <SelectItem key={item} value={item}>
@@ -66,30 +58,38 @@ function PaginationUI({
               </SelectGroup>
             </SelectContent>
           </Select>
+        <span className="text-xs text-muted-foreground">
+          {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCount)}{" "}
+          of <span className="font-medium text-foreground">{totalCount}</span>{" "}
+          records
+        </span>
+      </div>
+      <div className="">
+        <div className="flex items-center gap-2">
           <Button
-            size={"icon-sm"}
-            variant={"outline"}
+            size={"sm"}
+            variant={"secondary"}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
           >
-            <ChevronLeft />{" "}
+            <ChevronLeft /> Previous
           </Button>
           <Input
             placeholder="Go to Page"
             type="number"
-            className="h-8 w-12"
+            className="h-8 w-fit"
             min={1}
             max={totalPages}
             value={page}
             onChange={handleGoToPage}
           />
           <Button
-            size={"icon-sm"}
-            variant={"outline"}
+            size={"sm"}
+            variant={"secondary"}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
           >
-            <ChevronRight />{" "}
+            Next<ChevronRight /> 
           </Button>
         </div>
       </div>

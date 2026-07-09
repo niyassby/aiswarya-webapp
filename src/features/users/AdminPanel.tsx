@@ -101,8 +101,8 @@ export const AdminPanel: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Super Admin Control Hub
+          <h1 className="text-3xl font-bold tracking-tight">
+            Admin Controls
           </h1>
           <p className="text-muted-foreground">
             Manage user accounts, assign database roles, and view audit trail
@@ -114,7 +114,7 @@ export const AdminPanel: React.FC = () => {
         <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
           <DialogTrigger
             render={
-              <Button className="flex items-center gap-2 rounded-xl shadow-md">
+              <Button>
                 <Plus className="h-4 w-4" />
                 Register Staff Member
               </Button>
@@ -232,7 +232,7 @@ export const AdminPanel: React.FC = () => {
         <TabsList>
           <TabsTrigger value="staff">Staff Directory</TabsTrigger>
           <TabsTrigger value="invites">Invitations</TabsTrigger>
-          <TabsTrigger value="audit">System Audit</TabsTrigger>
+          <TabsTrigger value="audit">Audit Logs</TabsTrigger>
         </TabsList>
         <TabsContent value="audit">
           <AuditTab />

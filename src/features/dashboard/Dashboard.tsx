@@ -172,15 +172,15 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Welcome banner */}
-      <div className="relative flex flex-col gap-4 overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 to-indigo-950 p-6 text-background shadow-xl md:flex-row md:items-center md:justify-between md:p-8 dark:from-slate-200 dark:to-indigo-800">
+      <div className="relative flex flex-col gap-4 overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 to-indigo-950 p-6 text-background shadow-xl md:flex-row md:items-center md:justify-between md:p-8 ">
         <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
         <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
 
-        <div className="relative z-10 space-y-2">
+        <div className="relative z-10 space-y-2 text-white">
           <h1 className="text-2xl font-black tracking-tight md:text-3xl">
             Welcome back, {profile?.full_name || "Operator"}!
           </h1>
-          <p className="text-slate-350 max-w-xl text-xs font-light md:text-sm">
+          <p className=" max-w-xl text-xs font-light md:text-sm">
             Aiswarya Group Operations Control Center. Real-time updates and
             sales flow monitoring are active.
           </p>
@@ -200,19 +200,19 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Global Time Filter */}
-      {isSuperAdmin ||
-        (isManager && (
+      {isSuperAdmin &&
+        isManager && (
           <div className="flex items-center justify-between gap-2 max-md:flex-col">
-            <h2 className="text-sm font-bold tracking-wider text-slate-800 uppercase dark:text-slate-200">
+            <h2 className="text-sm font-bold tracking-wider  uppercase">
               Metrics Overview
             </h2>
-            <div className="flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900">
+            <div className="flex rounded-xl bg-muted p-1">
               <button
                 onClick={() => setTimeFilter("all")}
                 className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
                   timeFilter === "all"
-                    ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white"
-                    : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    ? "shadow-sm bg-foreground text-background"
+                    : "text-muted-foreground"
                 }`}
               >
                 All Time
@@ -221,8 +221,8 @@ export const Dashboard: React.FC = () => {
                 onClick={() => setTimeFilter("month")}
                 className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
                   timeFilter === "month"
-                    ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white"
-                    : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    ? "shadow-sm bg-foreground text-background"
+                    : "text-muted-foreground"
                 }`}
               >
                 This Month
@@ -231,15 +231,15 @@ export const Dashboard: React.FC = () => {
                 onClick={() => setTimeFilter("week")}
                 className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
                   timeFilter === "week"
-                    ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white"
-                    : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    ? "shadow-sm bg-foreground text-background"
+                    : "text-muted-foreground"
                 }`}
               >
                 This Week
               </button>
             </div>
           </div>
-        ))}
+        )}
 
       {/* RENDER VIEW BASED ON PRIMARY CAPABILITY */}
 

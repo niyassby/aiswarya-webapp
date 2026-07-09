@@ -84,12 +84,12 @@ export const CustomerList: React.FC = () => {
 
   // Query to fetch customers
   const { data: {customers = [] , totalCount = 0} = {}, isLoading } = useQuery({
-    queryKey: ["customers", page,debounceSearchTerm],
+    queryKey: ["customers", page,debounceSearchTerm, limit],
     queryFn: async () => {
         let query = supabase
           .from("customers")
           .select("*", { count: "exact" })
-          .order("name", { ascending: true });
+          .order("created_at", { ascending: false });
 
         if (debounceSearchTerm) {
           query = query.or(
@@ -146,14 +146,14 @@ export const CustomerList: React.FC = () => {
       {/* Header and Counters */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Customers Directory</h1>
+          <h1 className="text-3xl font-bold tracking-tight ">Customers Directory</h1>
           <p className="text-muted-foreground">Manage and view order histories for Aiswarya customers.</p>
         </div>
 
         {canCreate && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger render={
-              <Button className="rounded-xl flex items-center gap-2 shadow-md">
+              <Button>
                 <UserPlus className="h-4 w-4" />
                 Add Customer
               </Button>
@@ -235,7 +235,7 @@ export const CustomerList: React.FC = () => {
               placeholder="Search by name, phone, tax ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 rounded-xl"
+              className="pl-10 "
             />
           </div>
         </div>
@@ -258,6 +258,7 @@ export const CustomerList: React.FC = () => {
                   <TableHead className="font-semibold">Contact Info</TableHead>
                   <TableHead className="font-semibold">GST / Tax ID</TableHead>
                   <TableHead className="font-semibold">Notes</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
                   <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -288,6 +289,12 @@ export const CustomerList: React.FC = () => {
                     <TableCell className="font-mono text-xs">{customer.tax_id || "N/A"}</TableCell>
                     <TableCell className="max-w-xs truncate text-xs text-muted-foreground">
                       {customer.notes || "-"}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      <div className="space-x-2">
+                        <Button render={<Link to={`/orders/create?customer_id=${customer.id}`} />} variant="secondary" size="sm"> Order</Button>
+                        <Button render={<Link to={`/complaints?customer_id=${customer.id}`} />} variant="outline" size="sm"> Complaint</Button>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Button render={<Link to={`/customers/${customer.id}`} />} variant="ghost" size="sm" className="rounded-xl flex items-center gap-1">

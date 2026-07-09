@@ -356,7 +356,7 @@ export const ProductList: React.FC = () => {
               placeholder="Search catalog by name, barcode..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="rounded-xl pl-10"
+              className=" pl-10"
             />
           </div>
         </div>

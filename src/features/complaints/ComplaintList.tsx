@@ -122,7 +122,7 @@ export const ComplaintList: React.FC = () => {
   })
 
   const { data: { complaints = [], totalCount = 0 } = {}, isLoading } = useQuery({
-    queryKey: ["complaints", profile?.id, page, searchTerm, statusFilter],
+    queryKey: ["complaints", profile?.id, page, searchTerm, statusFilter, pageSize],
     queryFn: async () => {
       if (!profile) return { complaints: [], totalCount: 0 }
       let query = supabase
@@ -244,7 +244,7 @@ export const ComplaintList: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-3xl font-bold tracking-tight ">
             Complaints Board
           </h1>
           <p className="text-muted-foreground">
@@ -255,7 +255,7 @@ export const ComplaintList: React.FC = () => {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger
             render={
-              <Button className="flex items-center gap-2 rounded-xl shadow-md">
+              <Button >
                 <Plus className="h-4 w-4" />
                 File Complaint
               </Button>
@@ -289,13 +289,13 @@ export const ComplaintList: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="order_id">Linked Order (Optional)</Label>
+                  <Label htmlFor="order_id">Linked Order</Label>
                   <select
                     id="order_id"
                     {...register("order_id")}
                     className="w-full rounded-xl border px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary bg-muted"
                   >
-                    <option value="">-- No Linked Order --</option>
+                    <option value="">No Linked Order</option>
                     {orders.map((o) => (
                       <option key={o.id} value={o.id}>
                         {o.order_no}
@@ -375,7 +375,7 @@ export const ComplaintList: React.FC = () => {
       </div>
 
       {/* Counters */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="flex items-center gap-4 rounded-2xl border bg-card p-5 shadow-sm">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-500/10 text-slate-500 dark:bg-slate-950/30">
             <LayoutGrid className="h-5 w-5" />
@@ -423,7 +423,7 @@ export const ComplaintList: React.FC = () => {
 
       {/* Filters and Table */}
       <div className="overflow-hidden rounded-2xl border bg-card">
-        <div className="flex flex-col items-center justify-between gap-4 border-b p-5 sm:flex-row">
+        <div className="flex flex-col items-center md:justify-between gap-4 border-b p-5 sm:flex-row w-full">
           <div className="relative w-full max-w-sm">
             <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -433,21 +433,20 @@ export const ComplaintList: React.FC = () => {
                 setSearchTerm(e.target.value)
                 setPage(1)
               }}
-              className="rounded-xl pl-10"
+              className="pl-10"
             />
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-auto">
              <Select items={items} value={statusFilter} onValueChange={(value:any)=>{
               setStatusFilter(value)
               setPage(1)
              }}>
-      <SelectTrigger className="w-full max-w-48">
+      <SelectTrigger className="w-full md:max-w-45">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
-          <SelectLabel>Fruits</SelectLabel>
+          <SelectLabel>Status</SelectLabel>
           {items.map((item) => (
             <SelectItem key={item.value} value={item.value}>
               {item.label}
@@ -456,7 +455,6 @@ export const ComplaintList: React.FC = () => {
         </SelectGroup>
       </SelectContent>
     </Select>
-          </div>
         </div>
 
         <div className="overflow-x-auto">

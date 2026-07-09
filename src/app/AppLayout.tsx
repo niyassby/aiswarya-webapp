@@ -13,13 +13,13 @@ import {
   LogOut,
   X,
   User,
-  ShieldCheck,
   ChevronRight,
   Package,
   PanelLeft,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { ModeToggle } from "@/components/mode-toggle"
 
 interface NavItem {
   name: string
@@ -32,7 +32,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { user, profile, logout } = useAuth()
-  const { hasAnyRole, isSuperAdmin } = useRole()
+  const { hasAnyRole } = useRole()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
@@ -129,7 +129,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
         {/* Sidebar Header */}
         <div className="flex h-16 items-center justify-between border-b px-6">
           <div className="flex items-center gap-2">
-            <div className="rounded-xl bg-muted p-1.5">
+            <div className="rounded-xl bg-muted dark:bg-accent-foreground p-1.5">
               <img className="w-8" src={logo} alt="logo" />
             </div>
             <div className="flex flex-col gap-0.5">
@@ -256,20 +256,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            {isSuperAdmin && (
-              <span className="hidden items-center gap-1.5 rounded-full border border-rose-500/20 bg-rose-500/5 px-2.5 py-0.5 text-xs font-semibold text-rose-500 md:flex">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Super Admin Access
-              </span>
-            )}
-            <div className="hidden text-xs text-muted-foreground sm:block">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "short",
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
-            </div>
+           <ModeToggle/>
           </div>
         </header>
 

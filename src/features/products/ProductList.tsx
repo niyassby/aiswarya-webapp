@@ -27,7 +27,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Search, Plus, Barcode, Edit, Package, AlertCircle} from "lucide-react"
-import { BulkUpload } from "./BulkUpload"
 import PaginationUI from "@/components/PaginationUI"
 
 // Form Schema

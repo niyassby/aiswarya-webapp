@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -26,7 +26,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Search, Plus, Barcode, Edit, Package, AlertCircle } from "lucide-react"
+import { Search, Plus, Barcode, Edit, Package, AlertCircle} from "lucide-react"
+import { BulkUpload } from "./BulkUpload"
+import PaginationUI from "@/components/PaginationUI"
 
 // Form Schema
 const productSchema = z.object({
@@ -51,6 +53,10 @@ export const ProductList: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<any | null>(null)
   const [scannerOpen, setScannerOpen] = useState(false)
 
+    const [page, setPage] = useState(1)
+    const [pageSize, setPageSize] = useState(10)
+
+
   const canModify = isSalesAdmin || isManager || isSuperAdmin
 
   // React Hook Form
@@ -71,18 +77,42 @@ export const ProductList: React.FC = () => {
     },
   })
 
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm)
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+      setPage(1)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
   // Query to fetch products
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products"],
+  const { data, isLoading } = useQuery({
+    queryKey: ["products", page, pageSize, debouncedSearch],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("products")
-        .select("*")
+        .select("*", { count: "exact" })
         .order("name", { ascending: true })
+
+      if (debouncedSearch) {
+        query = query.or(`name.ilike.%${debouncedSearch}%,barcode.ilike.%${debouncedSearch}%,specs.ilike.%${debouncedSearch}%`)
+      }
+
+      const from = (page - 1) * pageSize
+      const to = from + pageSize - 1
+
+      query = query.range(from, to)
+
+      const { data, error, count } = await query
       if (error) throw error
-      return data || []
+      return { products: data || [], totalCount: count || 0 }
     },
   })
+
+  const products = data?.products || []
+  const totalCount = data?.totalCount || 0
 
   // Mutation to create/update product
   const saveProductMutation = useMutation({
@@ -128,6 +158,10 @@ export const ProductList: React.FC = () => {
     saveProductMutation.mutate(values)
   }
 
+
+
+  
+
   const handleOpenAdd = () => {
     setEditingProduct(null)
     reset({
@@ -162,14 +196,6 @@ export const ProductList: React.FC = () => {
     toast.success(`Scanned: ${barcode}`)
   }
 
-  // Filter products by search term
-  const filteredProducts = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.barcode && p.barcode.includes(searchTerm)) ||
-      (p.specs && p.specs.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
-
   return (
     <div className="space-y-6">
       {/* Header and Add button */}
@@ -184,12 +210,17 @@ export const ProductList: React.FC = () => {
         </div>
 
         {canModify && (
-          <Button
-            onClick={handleOpenAdd}
-          >
-            <Plus className="h-4 w-4" />
-            Add Product
-          </Button>
+          <div className="flex gap-2">
+            
+            
+            {/* <BulkUpload/> */}
+            <Button
+              onClick={handleOpenAdd}
+            >
+              <Plus className="h-4 w-4" />
+              Add Product
+            </Button>
+          </div>
         )}
       </div>
 
@@ -203,7 +234,7 @@ export const ProductList: React.FC = () => {
             <span className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
               Catalog Items
             </span>
-            <h3 className="mt-0.5 text-2xl font-bold">{products.length}</h3>
+            <h3 className="mt-0.5 text-2xl font-bold">{totalCount}</h3>
           </div>
         </div>
 
@@ -369,7 +400,7 @@ export const ProductList: React.FC = () => {
                 Loading products catalog...
               </p>
             </div>
-          ) : filteredProducts.length === 0 ? (
+          ) : products.length === 0 ? (
             <div className="py-16 text-center text-muted-foreground">
               No products found in catalog.
             </div>
@@ -390,7 +421,7 @@ export const ProductList: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredProducts.map((product) => (
+                {products.map((product) => (
                   <TableRow
                     key={product.id}
                   >
@@ -449,6 +480,15 @@ export const ProductList: React.FC = () => {
               </TableBody>
             </Table>
           )}
+{totalCount > 1 && (
+          <PaginationUI
+            page={page}
+            setPage={setPage}
+            totalCount={totalCount}
+            pageSize={pageSize}
+            setPageSize={setPageSize}
+          />
+        )}
         </div>
       </div>
     </div>

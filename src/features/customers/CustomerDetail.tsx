@@ -35,7 +35,6 @@ import {
   Phone,
   Mail,
   MapPin,
-  FileSpreadsheet,
   Plus,
   Edit2,
   Calendar,
@@ -50,7 +49,6 @@ const customerSchema = z.object({
   phone: z.string().optional().or(z.literal("")),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   address: z.string().optional().or(z.literal("")),
-  tax_id: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
 })
 
@@ -64,7 +62,6 @@ export const CustomerDetail: React.FC = () => {
   const { user } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
 
-  const canEdit = isSalesAdmin || isSuperAdmin
 
   // 1. Fetch Customer Data
   const { data: customer, isLoading: customerLoading } = useQuery({
@@ -123,7 +120,6 @@ export const CustomerDetail: React.FC = () => {
           phone: customer.phone || "",
           email: customer.email || "",
           address: customer.address || "",
-          tax_id: customer.tax_id || "",
           notes: customer.notes || "",
         }
       : undefined,
@@ -139,7 +135,6 @@ export const CustomerDetail: React.FC = () => {
           phone: values.phone || null,
           email: values.email || null,
           address: values.address || null,
-          tax_id: values.tax_id || null,
           notes: values.notes || null,
           updated_at: new Date().toISOString(),
         })
@@ -208,7 +203,6 @@ export const CustomerDetail: React.FC = () => {
         </Button>
 
         <div className="flex gap-2">
-          {canEdit && (
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
               <DialogTrigger
                 render={
@@ -258,11 +252,6 @@ export const CustomerDetail: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="tax_id">GST / Tax ID</Label>
-                    <Input id="tax_id" {...register("tax_id")} />
-                  </div>
-
-                  <div className="space-y-2">
                     <Label htmlFor="address">Address</Label>
                     <Textarea id="address" {...register("address")} rows={2} />
                   </div>
@@ -295,7 +284,6 @@ export const CustomerDetail: React.FC = () => {
                 </form>
               </DialogContent>
             </Dialog>
-          )}
 
           {isSalesAdmin && (
             <Button
@@ -357,19 +345,7 @@ export const CustomerDetail: React.FC = () => {
                     </div>
                   </div>
                 )}
-                {customer.tax_id && (
-                  <div className="flex items-start gap-2.5 text-sm">
-                    <FileSpreadsheet className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-                    <div>
-                      <span className="block text-xs text-muted-foreground">
-                        GST / Tax ID
-                      </span>
-                      <span className="rounded border px-1.5 py-0.5 font-mono text-xs font-semibold">
-                        {customer.tax_id}
-                      </span>
-                    </div>
-                  </div>
-                )}
+                
                 {customer.address && (
                   <div className="flex items-start gap-2.5 text-sm">
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />

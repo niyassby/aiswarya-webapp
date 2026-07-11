@@ -618,9 +618,6 @@ export const OrderDetail: React.FC = () => {
                 {order.customers?.email && (
                   <p>Email: {order.customers.email}</p>
                 )}
-                {order.customers?.tax_id && (
-                  <p>GST/Tax: {order.customers.tax_id}</p>
-                )}
               </div>
 
               <div className="dark:border-slate-850 border-t  pt-2 text-[10px] text-muted-foreground">

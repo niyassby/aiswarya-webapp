@@ -679,9 +679,6 @@ export const OrderCreate: React.FC = () => {
                           Email: {selectedCustomer.email}
                         </p>
                       )}
-                      {selectedCustomer.tax_id && (
-                        <p>Tax ID: {selectedCustomer.tax_id}</p>
-                      )}
                     </div>
 
                     <Button

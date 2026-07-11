@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/utils/supabase";
-import { useRole } from "@/hooks/useRole";
+// import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/features/auth/useAuth";
 import { toast } from "@/components/ui/toast";
 import {
@@ -38,7 +38,6 @@ const customerSchema = z.object({
   phone: z.string().optional().or(z.literal("")),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   address: z.string().optional().or(z.literal("")),
-  tax_id: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
 });
 
@@ -46,7 +45,7 @@ type CustomerFormValues = z.infer<typeof customerSchema>;
 
 export const CustomerList: React.FC = () => {
   const queryClient = useQueryClient();
-  const { isSalesAdmin, isSuperAdmin } = useRole();
+  // const { isSalesAdmin, isSuperAdmin } = useRole();
   const { profile } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [debounceSearchTerm,setDebounceSearchTerm]=useState("")
@@ -54,7 +53,6 @@ export const CustomerList: React.FC = () => {
   const [page,setPage]=useState(1)
   const [limit,setLimit]=useState(10)
 
-  const canCreate = isSalesAdmin || isSuperAdmin;
 
   useEffect(()=>{
     const timer=setTimeout(()=>{
@@ -77,7 +75,6 @@ export const CustomerList: React.FC = () => {
       phone: "",
       email: "",
       address: "",
-      tax_id: "",
       notes: "",
     },
   });
@@ -93,7 +90,7 @@ export const CustomerList: React.FC = () => {
 
         if (debounceSearchTerm) {
           query = query.or(
-            `name.ilike.%${debounceSearchTerm}%,phone.ilike.%${debounceSearchTerm}%,tax_id.ilike.%${debounceSearchTerm}%`
+            `name.ilike.%${debounceSearchTerm}%,phone.ilike.%${debounceSearchTerm}%`
           );
         }
 
@@ -116,7 +113,6 @@ export const CustomerList: React.FC = () => {
           phone: values.phone || null,
           email: values.email || null,
           address: values.address || null,
-          tax_id: values.tax_id || null,
           notes: values.notes || null,
           created_by: profile?.id,
         },
@@ -150,7 +146,6 @@ export const CustomerList: React.FC = () => {
           <p className="text-muted-foreground">Manage and view order histories for Aiswarya customers.</p>
         </div>
 
-        {canCreate && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger render={
               <Button>
@@ -183,11 +178,6 @@ export const CustomerList: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="tax_id">GST / Tax ID (Optional)</Label>
-                  <Input id="tax_id" {...register("tax_id")} placeholder="29GGGGG1234F1Z5" />
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="address">Address</Label>
                   <Textarea id="address" {...register("address")} placeholder="Customer street address..." rows={2} />
                 </div>
@@ -210,7 +200,6 @@ export const CustomerList: React.FC = () => {
               </form>
             </DialogContent>
           </Dialog>
-        )}
       </div>
 
       {/* Directory Statistics */}
@@ -254,12 +243,13 @@ export const CustomerList: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50/50 dark:bg-slate-950/20">
-                  <TableHead className="font-semibold">Name</TableHead>
-                  <TableHead className="font-semibold">Contact Info</TableHead>
-                  <TableHead className="font-semibold">GST / Tax ID</TableHead>
+                  <TableHead className="font-semibold w-[200px] max-w-sm">Name</TableHead>
+                  <TableHead className="font-semibold">Phone No</TableHead>
+                  <TableHead className="font-semibold">Email</TableHead>
+                  <TableHead className="font-semibold">Address</TableHead>
                   <TableHead className="font-semibold">Notes</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                  <TableHead className="w-[100px]"></TableHead>
+                  <TableHead className="">Actions</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -271,22 +261,20 @@ export const CustomerList: React.FC = () => {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <div className="space-y-1">
-                        {customer.phone && (
-                          <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                      <div className="flex items-center gap-1.5">
                             <Phone className="h-3.5 w-3.5 opacity-80" />
-                            {customer.phone}
+                            {customer.phone || "N/A"}
                           </div>
-                        )}
-                        {customer.email && (
-                          <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
-                            <Mail className="h-3.5 w-3.5 opacity-80" />
-                            {customer.email}
-                          </div>
-                        )}
-                      </div>
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{customer.tax_id || "N/A"}</TableCell>
+                    <TableCell className="">
+                      <div className="flex items-center gap-1.5">
+                            <Mail className="h-3.5 w-3.5 opacity-80" />
+                            {customer.email || "N/A"}
+                          </div>
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate text-xs text-muted-foreground">
+                      {customer.address || "-"}
+                    </TableCell>
                     <TableCell className="max-w-xs truncate text-xs text-muted-foreground">
                       {customer.notes || "-"}
                     </TableCell>

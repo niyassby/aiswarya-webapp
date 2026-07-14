@@ -92,6 +92,16 @@ export function App() {
           }
         />
         <Route
+          path="/orders/:id/edit"
+          element={
+            <RoleGuard allow={["sales_admin", "super_admin"]}>
+              <AppLayout>
+                <OrderCreate />
+              </AppLayout>
+            </RoleGuard>
+          }
+        />
+        <Route
           path="/orders/:id"
           element={
             <RoleGuard allow={["sales_admin", "accounts", "manager", "super_admin"]}>
@@ -113,6 +123,16 @@ export function App() {
         />
         <Route
           path="/purchase-requests/create"
+          element={
+            <RoleGuard allow={["sales_admin", "manager", "super_admin"]}>
+              <AppLayout>
+                <PurchaseRequestCreate />
+              </AppLayout>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/purchase-requests/:id/edit"
           element={
             <RoleGuard allow={["sales_admin", "manager", "super_admin"]}>
               <AppLayout>

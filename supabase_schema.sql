@@ -286,6 +286,9 @@ create policy "Allow order updates to authorized roles" on orders
     or (public.has_role('sales_admin') and created_by = auth.uid())
   );
 
+create policy "Allow order deletion to super_admin and managers" on orders
+  for delete using (public.has_any_role('super_admin', 'manager'));
+
 -- ORDER ITEMS Policies
 create policy "Allow reading order items based on order access" on order_items
   for select using (
@@ -322,6 +325,9 @@ create policy "Allow PR creation to sales_admin, manager, super_admin" on purcha
 
 create policy "Allow PR updates to managers and super admins" on purchase_requests
   for update using (public.has_any_role('manager', 'super_admin'));
+
+create policy "Allow PR deletion to managers and super admins" on purchase_requests
+  for delete using (public.has_any_role('manager', 'super_admin'));
 
 -- PURCHASE REQUEST ITEMS Policies
 create policy "Allow reading purchase request items based on PR access" on purchase_request_items

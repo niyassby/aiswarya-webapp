@@ -30,7 +30,7 @@ function StaffTab() {
   const [editingStaffMember, setEditingStaffMember] = useState<any | null>(null)
   const [staffEditRoles, setStaffEditRoles] = useState<string[]>([])
   
-  const { data: staff = [], isLoading: staffLoading, error: staffError } = useQuery({
+  const { data: staff = [], isLoading: staffLoading} = useQuery({
     queryKey: ["admin-staff"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -47,8 +47,6 @@ function StaffTab() {
       return data || []
     },
   })
-  console.log(staff);
-  console.log(staffError);
 
   const toggleActiveMutation = useMutation({
     mutationFn: async ({

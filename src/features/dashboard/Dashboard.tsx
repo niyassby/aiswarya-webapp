@@ -267,6 +267,7 @@ export const Dashboard: React.FC = () => {
                   render={<Link to="/orders/create" />}
                   size="sm"
                   className="h-8 self-start rounded-xl text-xs"
+                  nativeButton={false}
                 >
                   Launch Checkout
                 </Button>
@@ -288,6 +289,7 @@ export const Dashboard: React.FC = () => {
                   render={<Link to="/customers" />}
                   variant="outline"
                   size="sm"
+                  nativeButton={false}
                   className="h-8 self-start rounded-xl text-xs"
                 >
                   Add Customer
@@ -310,6 +312,7 @@ export const Dashboard: React.FC = () => {
                   render={<Link to="/complaints" />}
                   variant="outline"
                   size="sm"
+                  nativeButton={false}
                   className="h-8 self-start rounded-xl text-xs"
                 >
                   Log Incident
@@ -573,6 +576,7 @@ export const Dashboard: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   className="h-8 rounded-lg text-xs"
+                  nativeButton={false}
                 >
                   View All
                 </Button>
@@ -607,6 +611,7 @@ export const Dashboard: React.FC = () => {
                             render={<Link to="/purchase-requests" />}
                             size="sm"
                             className="h-7 rounded-lg px-2.5 text-[10px]"
+                            nativeButton={false}
                           >
                             Review
                           </Button>
@@ -635,6 +640,7 @@ export const Dashboard: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   className="h-8 rounded-lg text-xs"
+                  nativeButton={false}
                 >
                   View All
                 </Button>
@@ -666,6 +672,7 @@ export const Dashboard: React.FC = () => {
                             render={<Link to={`/complaints/${c.id}`} />}
                             size="sm"
                             className="h-7 rounded-lg px-2.5 text-[10px]"
+                            nativeButton={false}
                           >
                             Assign
                           </Button>
@@ -696,6 +703,7 @@ export const Dashboard: React.FC = () => {
               render={<Link to="/admin" />}
               size="sm"
               className="flex items-center gap-1.5 rounded-xl shadow"
+              nativeButton={false}
             >
               <UserCheck className="h-4 w-4" />
               Manage Staff & Roles

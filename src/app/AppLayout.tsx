@@ -208,14 +208,16 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
       {isMobile && (
         <nav className="fixed bottom-0 z-30 w-full border-t bg-background py-4 ">
           <div className="flex items-center justify-between   px-6">
-            {allowedNavItems.map((item) => {
+            {allowedNavItems.map((item, i) => {
               const isActive = getIsActive(item.path)
               const Icon = item.icon
               return (
                 <Button
                   variant={isActive ? "default" : "ghost"}
+                  key={i}
                   size={'icon-lg'}
                   className={'size-11'}
+                  nativeButton={false}
                   render={
                     <Link
                       key={item.name}

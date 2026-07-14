@@ -247,6 +247,41 @@ export const PurchaseRequestDetail: React.FC = () => {
     },
   })
 
+  // Delete Purchase Request mutation
+  const deletePrMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("purchase_requests")
+        .delete()
+        .eq("id", id)
+      if (error) throw error
+
+      // Log to audit log
+      await supabase.from("audit_log").insert([
+        {
+          actor_id: profile?.id,
+          action: `Deleted Purchase Request ${pr?.request_no}`,
+          entity_type: "purchase_requests",
+          entity_id: id,
+        },
+      ])
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-requests"] })
+      toast.success("Purchase request deleted successfully")
+      navigate("/purchase-requests")
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete purchase request")
+    },
+  })
+
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this purchase request? This action cannot be undone.")) {
+      deletePrMutation.mutate()
+    }
+  }
+
 
   // Loading state
   if (prLoading) {
@@ -303,9 +338,29 @@ export const PurchaseRequestDetail: React.FC = () => {
           
           {/* Manager Controls */}
           {canApprove && (
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="flex flex-wrap items-center md:justify-end gap-2">
+              {/* Delete Request */}
+              <Button
+                onClick={handleDelete}
+                disabled={deletePrMutation.isPending}
+                variant="outline"
+                className="rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-600 border-rose-200 dark:border-rose-900/50"
+              >
+                Delete Request
+              </Button>
+                  {/* Edit Request */}
+                  {pr.status != "fulfilled" &&<Button
+                    render={<Link to={`/purchase-requests/${pr.id}/edit`} />}
+                    variant="outline"
+                    className="rounded-xl"
+                    nativeButton={false}
+                  >
+                    Edit Request
+                  </Button>}
+
               {pr.status === "requested" && (
                 <>
+
                   <Button
                     variant="outline"
                     onClick={() => updateStatusMutation.mutate({ nextStatus: "cancelled" })}

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import type { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase";
 
@@ -33,42 +33,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const loadedUserIdRef = useRef<string | null>(null);
+  const fetchingUserIdRef = useRef<string | null>(null);
+
+  const fetchCredentialsFromSupabase = async (userId: string) => {
+    // 1. Fetch Profile
+    const { data: profileData, error: profileErr } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    if (profileErr) throw profileErr;
+
+    if (profileData && !profileData.is_active) {
+      return {
+        profile: profileData,
+        roles: [] as AppRole[],
+        error: "Your account is deactivated. Please contact the administrator.",
+      };
+    }
+
+    // 2. Fetch Roles
+    const { data: rolesData, error: rolesErr } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+
+    if (rolesErr) throw rolesErr;
+
+    const userRoles = (rolesData || []).map((r) => r.role as AppRole);
+    return {
+      profile: profileData,
+      roles: userRoles,
+      error: null,
+    };
+  };
+
   const fetchProfileAndRoles = async (userId: string) => {
     try {
-      // 1. Fetch Profile
-      const { data: profileData, error: profileErr } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
-
-      if (profileErr) throw profileErr;
-
-      if (profileData && !profileData.is_active) {
-        setProfile(profileData);
-        setRoles([]);
-        setError("Your account is deactivated. Please contact the administrator.");
-        return;
-      }
-
-      setProfile(profileData);
-
-      // 2. Fetch Roles
-      const { data: rolesData, error: rolesErr } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
-
-      if (rolesErr) throw rolesErr;
-
-      const userRoles = (rolesData || []).map((r) => r.role as AppRole);
-      setRoles(userRoles);
-      setError(null);
+      const data = await fetchCredentialsFromSupabase(userId);
+      setProfile(data.profile);
+      setRoles(data.roles);
+      setError(data.error);
+      loadedUserIdRef.current = userId;
     } catch (err: any) {
       console.error("Error loading profile or roles:", err);
       setError(err.message || "Failed to load user credentials.");
       setProfile(null);
       setRoles([]);
+      loadedUserIdRef.current = null;
     }
   };
 
@@ -78,6 +92,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(null);
     setRoles([]);
     setError(null);
+    loadedUserIdRef.current = null;
+    fetchingUserIdRef.current = null;
   };
 
   const refreshProfile = async () => {
@@ -94,12 +110,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    let active = true;
+
+    const loadUserCredentials = async (userId: string, isInitial: boolean = false) => {
+      // If we already loaded this user's details, skip fetching
+      if (loadedUserIdRef.current === userId) {
+        if (active) setLoading(false);
+        return;
+      }
+      // If a fetch is already in progress for this user, do not start another one
+      if (fetchingUserIdRef.current === userId) {
+        return;
+      }
+
+      fetchingUserIdRef.current = userId;
+      if (isInitial || loadedUserIdRef.current !== userId) {
+        if (active) setLoading(true);
+      }
+
+      try {
+        const data = await fetchCredentialsFromSupabase(userId);
+        if (active) {
+          setProfile(data.profile);
+          setRoles(data.roles);
+          setError(data.error);
+          loadedUserIdRef.current = userId;
+        }
+      } catch (err: any) {
+        console.error("Error loading profile or roles:", err);
+        if (active) {
+          setError(err.message || "Failed to load user credentials.");
+          setProfile(null);
+          setRoles([]);
+          loadedUserIdRef.current = null;
+        }
+      } finally {
+        if (active) {
+          fetchingUserIdRef.current = null;
+          setLoading(false);
+        }
+      }
+    };
+
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfileAndRoles(session.user.id).finally(() => setLoading(false));
+        loadUserCredentials(session.user.id, true);
       } else {
         setLoading(false);
       }
@@ -108,13 +167,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen to changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, currentSession) => {
+        if (!active) return;
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
 
         if (currentSession?.user) {
-          setLoading(true);
-          await fetchProfileAndRoles(currentSession.user.id);
-          setLoading(false);
+          loadUserCredentials(currentSession.user.id, false);
         } else {
           clearAuth();
           setLoading(false);
@@ -123,6 +181,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     return () => {
+      active = false;
       subscription.unsubscribe();
     };
   }, []);

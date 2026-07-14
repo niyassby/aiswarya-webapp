@@ -33,6 +33,7 @@ import {
   AlertCircle,
   Truck,
   MessageSquareWarning,
+  Plus,
 } from "lucide-react"
 
 import {
@@ -44,6 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useIsMobile } from "@/hooks/use-mobile"
 const items = [
   { label: "Select Status", value: null },
   { label: "Enquiry", value: "enquiry" },
@@ -59,17 +61,74 @@ export const OrderDetail: React.FC = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { profile } = useAuth()
-  const { isSalesAdmin } = useRole()
+  const { isSalesAdmin, isSuperAdmin, isManager } = useRole()
+  const isMobile = useIsMobile()
 
   const [statusNote, setStatusNote] = useState("")
   const [nextStatus, setNextStatus] = useState<string|null>(null)
   const [prDialogOpen, setPrDialogOpen] = useState(false)
-  const [selectedPrItem, setSelectedPrItem] = useState<any>(null)
 
-  // PR form state
-  const [prQuantity, setPrQuantity] = useState(1)
+  interface PrFormItem {
+    id: string
+    item_name: string
+    specs: string
+    quantity: number
+    selected: boolean
+    is_custom: boolean
+  }
+  const [prFormItems, setPrFormItems] = useState<PrFormItem[]>([])
   const [prSupplier, setPrSupplier] = useState("")
   const [prExpectedDate, setPrExpectedDate] = useState("")
+
+  const handleOpenBulkPrDialog = () => {
+    const initialItems = (order?.order_items || []).map((item: any) => ({
+      id: item.id,
+      item_name: item.item_name,
+      specs: item.specs || "",
+      quantity: item.quantity,
+      selected: true,
+      is_custom: false,
+    }))
+    setPrFormItems(initialItems)
+    setPrDialogOpen(true)
+  }
+
+  const handleOpenSinglePrDialog = (selectedItem: any) => {
+    const initialItems = (order?.order_items || []).map((item: any) => ({
+      id: item.id,
+      item_name: item.item_name,
+      specs: item.specs || "",
+      quantity: item.quantity,
+      selected: item.id === selectedItem.id,
+      is_custom: false,
+    }))
+    setPrFormItems(initialItems)
+    setPrDialogOpen(true)
+  }
+
+  const handleAddCustomPrItem = () => {
+    setPrFormItems([
+      ...prFormItems,
+      {
+        id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        item_name: "",
+        specs: "",
+        quantity: 1,
+        selected: true,
+        is_custom: true,
+      }
+    ])
+  }
+
+  const handleUpdatePrItem = (id: string, field: keyof PrFormItem, value: any) => {
+    setPrFormItems(
+      prFormItems.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+    )
+  }
+
+  const handleDeleteCustomPrItem = (id: string) => {
+    setPrFormItems(prFormItems.filter((item) => item.id !== id))
+  }
 
   // 1. Fetch Order Details
   const { data: order, isLoading: orderLoading } = useQuery({
@@ -226,9 +285,14 @@ export const OrderDetail: React.FC = () => {
     },
   })
 
-  // Mutation: Create Purchase Request
+  // Mutation: Create Purchase Request (Multi-Item)
   const createPrMutation = useMutation({
     mutationFn: async () => {
+      const selectedItems = prFormItems.filter((item) => item.selected && item.item_name.trim() !== "")
+      if (selectedItems.length === 0) {
+        throw new Error("Select or add at least one item to purchase")
+      }
+
       // 1. Insert PR
       const { data: prData, error: prError } = await supabase
         .from("purchase_requests")
@@ -245,18 +309,18 @@ export const OrderDetail: React.FC = () => {
         .single()
       if (prError) throw prError
 
-      // 2. Insert Item
-      const { error: itemError } = await supabase
+      // 2. Insert Items
+      const itemsPayload = selectedItems.map((item) => ({
+        purchase_request_id: prData.id,
+        product_name: item.item_name,
+        specs: item.specs || null,
+        quantity: item.quantity,
+      }))
+
+      const { error: itemsError } = await supabase
         .from("purchase_request_items")
-        .insert([
-          {
-            purchase_request_id: prData.id,
-            product_name: selectedPrItem.item_name,
-            specs: selectedPrItem.specs,
-            quantity: prQuantity,
-          },
-        ])
-      if (itemError) throw itemError
+        .insert(itemsPayload)
+      if (itemsError) throw itemsError
 
       return prData
     },
@@ -264,10 +328,12 @@ export const OrderDetail: React.FC = () => {
       queryClient.invalidateQueries({
         queryKey: ["order-purchase-requests", id],
       })
+      queryClient.invalidateQueries({
+        queryKey: ["purchase-requests"],
+      })
       toast.success("Purchase request created!")
       setPrDialogOpen(false)
-      setSelectedPrItem(null)
-      setPrQuantity(1)
+      setPrFormItems([])
       setPrSupplier("")
       setPrExpectedDate("")
     },
@@ -275,6 +341,41 @@ export const OrderDetail: React.FC = () => {
       toast.error(err.message || "Failed to submit purchase request")
     },
   })
+
+  // Delete Order mutation
+  const deleteOrderMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("orders")
+        .delete()
+        .eq("id", id)
+      if (error) throw error
+
+      // Log to audit log
+      await supabase.from("audit_log").insert([
+        {
+          actor_id: profile?.id,
+          action: `Deleted Order ${order?.order_no}`,
+          entity_type: "orders",
+          entity_id: id,
+        },
+      ])
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] })
+      toast.success("Order deleted successfully")
+      navigate("/orders")
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete order")
+    },
+  })
+
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this order? This action cannot be undone.")) {
+      deleteOrderMutation.mutate()
+    }
+  }
 
   if (orderLoading) {
     return (
@@ -309,16 +410,11 @@ export const OrderDetail: React.FC = () => {
   const currentStatusIndex = pipelineStatuses.indexOf(order.status)
   const isCancelled = order.status === "cancelled"
 
-  const handleOpenPrDialog = (item: any) => {
-    setSelectedPrItem(item)
-    setPrQuantity(item.quantity)
-    setPrDialogOpen(true)
-  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center md:justify-between max-md:flex-col max-md:items-start gap-3">
         <Button
           render={<Link to="/orders" />}
           variant="ghost"
@@ -330,6 +426,32 @@ export const OrderDetail: React.FC = () => {
         </Button>
 
         <div className="flex gap-2">
+          {/* Edit Order */}
+          {(isSalesAdmin || isSuperAdmin) && (
+            <Button
+              render={<Link to={`/orders/${order.id}/edit`} />}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 rounded-xl text-xs shadow-sm"
+              nativeButton={false}
+            >
+              Edit Order
+            </Button>
+          )}
+
+          {/* Delete Order */}
+          {(isSuperAdmin || isManager) && (
+            <Button
+              onClick={handleDelete}
+              variant="outline"
+              size="sm"
+              disabled={deleteOrderMutation.isPending}
+              className="gap-1.5 rounded-xl text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-rose-200 dark:border-rose-900/50"
+            >
+              Delete Order
+            </Button>
+          )}
+
           {/* Quick File Complaint */}
           <Button
             render={
@@ -339,15 +461,16 @@ export const OrderDetail: React.FC = () => {
             }
             variant="outline"
             className="gap-1.5 rounded-xl text-xs shadow-sm"
+            nativeButton={false}
           >
             <MessageSquareWarning className="h-4 w-4 text-rose-500" />
-            File Complaint
+            Complaint
           </Button>
         </div>
       </div>
 
       {/* Pipeline Stepper Stepper */}
-      <Card>
+      {!isMobile &&<Card>
         <CardContent className="p-4">
           {isCancelled ? (
             <div className="flex items-center justify-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-rose-500">
@@ -402,14 +525,14 @@ export const OrderDetail: React.FC = () => {
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card>}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Core items and comments */}
         <div className="space-y-6 lg:col-span-2">
           {/* Order Details card */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between border-b  p-5 ">
+            <CardHeader className="flex md:flex-row flex-col md:items-center  md:justify-between border-b p-5 ">
               <div>
                 <span className="text-[10px] font-bold text-muted-foreground uppercase">
                   Order details
@@ -418,11 +541,24 @@ export const OrderDetail: React.FC = () => {
                   {order.order_no}
                 </CardTitle>
               </div>
-              <StatusBadge
-                status={order.status}
-                type="order"
-                className="scale-110"
-              />
+              <div className="flex items-center gap-3">
+                {isSalesAdmin && (
+                  <Button
+                    onClick={handleOpenBulkPrDialog}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 rounded-xl text-xs gap-1"
+                  >
+                    <Truck className="h-3.5 w-3.5" />
+                    Raise Purchase Request
+                  </Button>
+                )}
+                <StatusBadge
+                  status={order.status}
+                  type="order"
+                  className="scale-110"
+                />
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
@@ -476,7 +612,7 @@ export const OrderDetail: React.FC = () => {
                             variant="ghost"
                             size="icon"
                             title="Request Stock Purchase"
-                            onClick={() => handleOpenPrDialog(item)}
+                            onClick={() => handleOpenSinglePrDialog(item)}
                             className="h-7 w-7 rounded-lg text-indigo-500 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/20"
                           >
                             <Truck className="h-4 w-4" />
@@ -685,68 +821,123 @@ export const OrderDetail: React.FC = () => {
 
       {/* Dialog for Raising Purchase Request */}
       <Dialog open={prDialogOpen} onOpenChange={setPrDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="flex flex-row items-center md:justify-between max-md:flex-col max-md:items-start gap-3">
             <DialogTitle>Raise Stock Purchase Request</DialogTitle>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAddCustomPrItem}
+              className="rounded-lg text-xs gap-1 mr-6"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add Custom Item
+            </Button>
           </DialogHeader>
-          <div className="space-y-4 pt-4 text-xs">
-            {selectedPrItem && (
-              <div className="space-y-1 rounded-xl border  p-2">
-                <p className="font-bold text-slate-800 dark:text-slate-200">
-                  {selectedPrItem.item_name}
-                </p>
-                {selectedPrItem.specs && (
-                  <p className="text-muted-foreground">
-                    {selectedPrItem.specs}
-                  </p>
-                )}
-                <p className="mt-1 text-[10px] text-muted-foreground">
-                  Barcode: {selectedPrItem.barcode || "N/A"}
-                </p>
+
+          <div className="space-y-4 pt-2 text-xs">
+            {/* Items List */}
+            <div className="space-y-2 rounded-xl border p-3 max-h-[35vh] overflow-y-auto bg-slate-50/50 dark:bg-slate-950/20">
+              <span className="font-bold text-[10px] uppercase text-muted-foreground tracking-wider">
+                Select Items to Order
+              </span>
+              {prFormItems.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">No items added yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {prFormItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 border-b pb-2.5 last:border-b-0 last:pb-0">
+                      <input
+                        type="checkbox"
+                        checked={item.selected}
+                        onChange={(e) => handleUpdatePrItem(item.id, "selected", e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {item.is_custom ? (
+                          <div className="space-y-1">
+                            <Input
+                              placeholder="Product Name"
+                              value={item.item_name}
+                              onChange={(e) => handleUpdatePrItem(item.id, "item_name", e.target.value)}
+                              className="h-8 text-xs"
+                            />
+                            <Input
+                              placeholder="Specs (e.g. size, details)"
+                              value={item.specs}
+                              onChange={(e) => handleUpdatePrItem(item.id, "specs", e.target.value)}
+                              className="h-7 text-[10px] text-muted-foreground"
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="font-semibold text-slate-800 dark:text-slate-200">
+                              {item.item_name}
+                            </p>
+                            {item.specs && (
+                              <p className="text-[10px] text-muted-foreground">
+                                {item.specs}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="text-muted-foreground mr-1 text-[11px]">Qty:</span>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => handleUpdatePrItem(item.id, "quantity", Math.max(1, Number(e.target.value)))}
+                            className="h-8 w-16 text-center text-xs"
+                          />
+                          {item.is_custom && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteCustomPrItem(item.id)}
+                              className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg animate-fade-in"
+                            >
+                              <Plus className="h-4 w-4 rotate-45" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="pr-supplier">Supplier Details (Optional)</Label>
+                <Input
+                  id="pr-supplier"
+                  placeholder="e.g. Acme Supplier Ltd..."
+                  value={prSupplier}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setPrSupplier(e.target.value)
+                  }
+                  className="rounded-lg"
+                />
               </div>
-            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="pr-qty">Quantity Needed *</Label>
-              <Input
-                id="pr-qty"
-                type="number"
-                min="1"
-                value={prQuantity}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setPrQuantity(Math.max(1, Number(e.target.value)))
-                }
-                className="rounded-lg"
-              />
+              <div className="space-y-2">
+                <Label htmlFor="pr-date">Expected Delivery Date</Label>
+                <Input
+                  id="pr-date"
+                  type="date"
+                  value={prExpectedDate}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setPrExpectedDate(e.target.value)
+                  }
+                  className="rounded-lg"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="pr-supplier">Supplier Details (Optional)</Label>
-              <Input
-                id="pr-supplier"
-                placeholder="e.g. Acme Supplier Ltd, contact details..."
-                value={prSupplier}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setPrSupplier(e.target.value)
-                }
-                className="rounded-lg"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="pr-date">Expected Delivery Date</Label>
-              <Input
-                id="pr-date"
-                type="date"
-                value={prExpectedDate}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setPrExpectedDate(e.target.value)
-                }
-                className="rounded-lg"
-              />
-            </div>
-
-            <DialogFooter className="pt-2">
+            <DialogFooter className="pt-4 border-t mt-4">
               <DialogClose
                 render={
                   <Button
@@ -760,7 +951,7 @@ export const OrderDetail: React.FC = () => {
               />
               <Button
                 onClick={() => createPrMutation.mutate()}
-                disabled={createPrMutation.isPending}
+                disabled={createPrMutation.isPending || prFormItems.filter(item => item.selected && item.item_name.trim() !== "").length === 0}
                 className="rounded-xl"
               >
                 {createPrMutation.isPending

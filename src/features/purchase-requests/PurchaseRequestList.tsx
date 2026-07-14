@@ -225,6 +225,7 @@ export const PurchaseRequestList: React.FC = () => {
         {canCreate && (
           <Button
             render={<Link to="/purchase-requests/create" />}
+            nativeButton={false}
           >
             <Plus className="h-4 w-4" />
             Submit Request
@@ -412,6 +413,7 @@ export const PurchaseRequestList: React.FC = () => {
                             variant="ghost"
                             size="sm"
                             className="flex items-center gap-1 rounded-xl"
+                            nativeButton={false}
                           >
                             Details
                             <ArrowUpRight className="h-4 w-4" />

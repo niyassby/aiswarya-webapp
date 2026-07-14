@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { useNavigate, useSearchParams, Link } from "react-router-dom"
+import { useNavigate, useSearchParams, Link, useParams } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/utils/supabase"
 import { useAuth } from "@/features/auth/useAuth"
@@ -43,10 +43,28 @@ export interface CheckoutItem {
 }
 
 export const OrderCreate: React.FC = () => {
+  const { id } = useParams<{ id: string }>()
+  const isEdit = !!id
+
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { profile } = useAuth()
+
+  // Fetch Existing Order if in edit mode
+  const { data: existingOrder, isLoading: isOrderLoading } = useQuery({
+    queryKey: ["edit-order", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*, order_items(*)")
+        .eq("id", id)
+        .single()
+      if (error) throw error
+      return data
+    },
+    enabled: isEdit,
+  })
 
   // State
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("")
@@ -89,13 +107,25 @@ export const OrderCreate: React.FC = () => {
   })
 
   useEffect(() => {
-    if (paramCustomerId && customers.length > 0) {
+    if (isEdit && existingOrder) {
+      setSelectedCustomerId(existingOrder.customer_id)
+      const mappedCart: CheckoutItem[] = existingOrder.order_items.map((item: any) => ({
+        id: item.id,
+        item_name: item.item_name,
+        barcode: item.barcode,
+        specs: item.specs,
+        quantity: item.quantity,
+        unit_price: Number(item.unit_price),
+        is_custom: item.is_custom,
+      }))
+      setCart(mappedCart)
+    } else if (paramCustomerId && customers.length > 0) {
       const exists = customers.some((c) => c.id === paramCustomerId)
       if (exists) {
         setSelectedCustomerId(paramCustomerId)
       }
     }
-  }, [paramCustomerId, customers])
+  }, [isEdit, existingOrder, paramCustomerId, customers])
 
   // Selected customer details
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId)
@@ -224,77 +254,135 @@ export const OrderCreate: React.FC = () => {
       if (!selectedCustomerId) throw new Error("Select a customer")
       if (cart.length === 0) throw new Error("Add at least one item")
 
-      // 1. Insert order
-      const { data: orderData, error: orderErr } = await supabase
-        .from("orders")
-        .insert([
-          {
+      if (isEdit) {
+        // 1. Update order
+        const { error: orderErr } = await supabase
+          .from("orders")
+          .update({
             customer_id: selectedCustomerId,
-            status: "enquiry",
-            created_by: profile?.id,
-          },
-        ])
-        .select()
-        .single()
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", id)
+        if (orderErr) throw orderErr
 
-      if (orderErr) throw orderErr
-      const newOrder = orderData
+        // 2. Delete existing items
+        const { error: deleteErr } = await supabase
+          .from("order_items")
+          .delete()
+          .eq("order_id", id)
+        if (deleteErr) throw deleteErr
 
-      // 2. Insert items
-      const itemsPayload = cart.map((item) => ({
-        order_id: newOrder.id,
-        barcode: item.barcode,
-        item_name: item.item_name,
-        specs: item.specs,
-        is_custom: item.is_custom,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-      }))
+        // 3. Insert new items
+        const itemsPayload = cart.map((item) => ({
+          order_id: id,
+          barcode: item.barcode,
+          item_name: item.item_name,
+          specs: item.specs,
+          is_custom: item.is_custom,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+        }))
 
-      const { error: itemsErr } = await supabase
-        .from("order_items")
-        .insert(itemsPayload)
-      if (itemsErr) throw itemsErr
+        const { error: itemsErr } = await supabase
+          .from("order_items")
+          .insert(itemsPayload)
+        if (itemsErr) throw itemsErr
 
-      // 3. Log initial status history
-      const { error: historyErr } = await supabase
-        .from("order_status_history")
-        .insert([
+        // 4. Log to audit log
+        await supabase.from("audit_log").insert([
           {
-            order_id: newOrder.id,
-            from_status: null,
-            to_status: "enquiry",
-            changed_by: profile?.id,
-            note: "Order created successfully",
+            actor_id: profile?.id,
+            action: `Edited Order ${existingOrder?.order_no}`,
+            entity_type: "orders",
+            entity_id: id,
+            details: { total_items: cart.length, total_amount: grandTotal },
           },
         ])
-      if (historyErr) throw historyErr
 
-      // 4. Log to audit log
-      await supabase.from("audit_log").insert([
-        {
-          actor_id: profile?.id,
-          action: `Created Order ${newOrder.order_no}`,
-          entity_type: "orders",
-          entity_id: newOrder.id,
-          details: { total_items: cart.length, total_amount: grandTotal },
-        },
-      ])
+        return { id }
+      } else {
+        // 1. Insert order
+        const { data: orderData, error: orderErr } = await supabase
+          .from("orders")
+          .insert([
+            {
+              customer_id: selectedCustomerId,
+              status: "enquiry",
+              created_by: profile?.id,
+            },
+          ])
+          .select()
+          .single()
 
-      return newOrder
+        if (orderErr) throw orderErr
+        const newOrder = orderData
+
+        // 2. Insert items
+        const itemsPayload = cart.map((item) => ({
+          order_id: newOrder.id,
+          barcode: item.barcode,
+          item_name: item.item_name,
+          specs: item.specs,
+          is_custom: item.is_custom,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+        }))
+
+        const { error: itemsErr } = await supabase
+          .from("order_items")
+          .insert(itemsPayload)
+        if (itemsErr) throw itemsErr
+
+        // 3. Log initial status history
+        const { error: historyErr } = await supabase
+          .from("order_status_history")
+          .insert([
+            {
+              order_id: newOrder.id,
+              from_status: null,
+              to_status: "enquiry",
+              changed_by: profile?.id,
+              note: "Order created successfully",
+            },
+          ])
+        if (historyErr) throw historyErr
+
+        // 4. Log to audit log
+        await supabase.from("audit_log").insert([
+          {
+            actor_id: profile?.id,
+            action: `Created Order ${newOrder.order_no}`,
+            entity_type: "orders",
+            entity_id: newOrder.id,
+            details: { total_items: cart.length, total_amount: grandTotal },
+          },
+        ])
+
+        return newOrder
+      }
     },
-    onSuccess: (newOrder) => {
+    onSuccess: (orderResult) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] })
+      queryClient.invalidateQueries({ queryKey: ["order", orderResult.id] })
       queryClient.invalidateQueries({
         queryKey: ["customer-orders", selectedCustomerId],
       })
-      toast.success("Order Created Successfully!")
-      navigate(`/orders/${newOrder.id}`)
+      toast.success(isEdit ? "Order Updated Successfully!" : "Order Created Successfully!")
+      navigate(`/orders/${orderResult.id}`)
     },
     onError: (err: any) => {
-      toast.error(err.message || "Failed to create order")
+      toast.error(err.message || "Failed to submit order")
     },
   })
+
+  if (isEdit && isOrderLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-24">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent font-semibold"></div>
+        <p className="text-sm text-muted-foreground font-semibold">Loading order details for edit...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -305,7 +393,7 @@ export const OrderCreate: React.FC = () => {
           Back to Orders
         </Button>
         <h1 className="text-xl font-bold tracking-tight text-slate-800 dark:text-white">
-          Create Sales Order
+          {isEdit ? `Edit Sales Order: ${existingOrder?.order_no || ""}` : "Create Sales Order"}
         </h1>
       </div>
 
@@ -733,11 +821,11 @@ export const OrderCreate: React.FC = () => {
               >
                 {submitOrderMutation.isPending ? (
                   <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"></div>
-                    Placing Order...
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent font-semibold"></div>
+                    {isEdit ? "Saving Changes..." : "Placing Order..."}
                   </div>
                 ) : (
-                  "Create Enquiry Order"
+                  isEdit ? "Save Order Changes" : "Create Enquiry Order"
                 )}
               </Button>
 

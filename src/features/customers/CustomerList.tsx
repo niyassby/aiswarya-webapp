@@ -280,12 +280,12 @@ export const CustomerList: React.FC = () => {
                     </TableCell>
                     <TableCell className="font-mono text-xs">
                       <div className="space-x-2">
-                        <Button render={<Link to={`/orders/create?customer_id=${customer.id}`} />} variant="secondary" size="sm"> Order</Button>
-                        <Button render={<Link to={`/complaints?customer_id=${customer.id}`} />} variant="outline" size="sm"> Complaint</Button>
+                        <Button nativeButton={false} render={<Link to={`/orders/create?customer_id=${customer.id}`} />} variant="secondary" size="sm"> Order</Button>
+                        <Button nativeButton={false} render={<Link to={`/complaints?customer_id=${customer.id}`} />} variant="outline" size="sm"> Complaint</Button>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button render={<Link to={`/customers/${customer.id}`} />} variant="ghost" size="sm" className="rounded-xl flex items-center gap-1">
+                      <Button nativeButton={false} render={<Link to={`/customers/${customer.id}`} />} variant="ghost" size="sm" className="rounded-xl flex items-center gap-1">
                         View Profile
                         <ChevronRight className="h-4 w-4" />
                       </Button>

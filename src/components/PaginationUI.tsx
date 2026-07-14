@@ -82,6 +82,7 @@ function PaginationUI({
             max={totalPages}
             value={page}
             onChange={handleGoToPage}
+            onFocus={(e)=>e.target.select()}
           />
           <Button
             size={"sm"}

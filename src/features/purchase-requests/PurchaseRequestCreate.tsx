@@ -1,5 +1,5 @@
-import React, { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import React, { useState, useEffect } from "react"
+import { useNavigate, useParams } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/utils/supabase"
 import { useAuth } from "@/features/auth/useAuth"
@@ -45,10 +45,28 @@ export interface PurchaseItemInput {
 }
 
 export const PurchaseRequestCreate: React.FC = () => {
+  const { id } = useParams<{ id: string }>()
+  const isEdit = !!id
+
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { profile } = useAuth()
   const isMobile = useIsMobile()
+
+  // Fetch existing Purchase Request for editing
+  const { data: existingPr, isLoading: isPrLoading } = useQuery({
+    queryKey: ["edit-pr", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("purchase_requests")
+        .select("*, purchase_request_items(*)")
+        .eq("id", id)
+        .single()
+      if (error) throw error
+      return data
+    },
+    enabled: isEdit,
+  })
 
   // General fields
   const [expectedDate, setExpectedDate] = useState<Date>()
@@ -56,6 +74,21 @@ export const PurchaseRequestCreate: React.FC = () => {
 
   // Items fields
   const [items, setItems] = useState<PurchaseItemInput[]>([])
+
+  useEffect(() => {
+    if (isEdit && existingPr) {
+      setExpectedDate(existingPr.expected_date ? new Date(existingPr.expected_date) : undefined)
+      setSupplierInfo(existingPr.supplier_info || "")
+      const mappedItems: PurchaseItemInput[] = existingPr.purchase_request_items.map((item: any) => ({
+        id: item.id,
+        product_name: item.product_name,
+        specs: item.specs || "",
+        quantity: item.quantity,
+        is_custom: true, // make them editable inputs
+      }))
+      setItems(mappedItems)
+    }
+  }, [isEdit, existingPr])
   const [productSearch, setProductSearch] = useState("")
   const [showProductDropdown, setShowProductDropdown] = useState(false)
 
@@ -152,59 +185,114 @@ export const PurchaseRequestCreate: React.FC = () => {
       const invalidItem = items.find((item) => !item.product_name.trim())
       if (invalidItem) throw new Error("All items must have a product name")
 
-      // 1. Insert Purchase Request
-      const { data: prData, error: prErr } = await supabase
-        .from("purchase_requests")
-        .insert([
-          {
+      if (isEdit) {
+        // 1. Update Purchase Request
+        const { error: prErr } = await supabase
+          .from("purchase_requests")
+          .update({
             expected_date: expectedDate || null,
             supplier_info: supplierInfo || null,
-            requested_by: profile?.id,
-            status: "requested",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", id)
+        if (prErr) throw prErr
+
+        // 2. Delete existing items
+        const { error: deleteErr } = await supabase
+          .from("purchase_request_items")
+          .delete()
+          .eq("purchase_request_id", id)
+        if (deleteErr) throw deleteErr
+
+        // 3. Insert new items
+        const itemsPayload = items.map((item) => ({
+          purchase_request_id: id,
+          product_name: item.product_name,
+          specs: item.specs || null,
+          quantity: item.quantity,
+        }))
+        const { error: itemsErr } = await supabase
+          .from("purchase_request_items")
+          .insert(itemsPayload)
+        if (itemsErr) throw itemsErr
+
+        // 4. Log to audit log
+        await supabase.from("audit_log").insert([
+          {
+            actor_id: profile?.id,
+            action: `Edited Purchase Request ${existingPr?.request_no}`,
+            entity_type: "purchase_requests",
+            entity_id: id,
+            details: { total_items: items.length },
           },
         ])
-        .select()
-        .single()
 
-      if (prErr) throw prErr
-      const newPr = prData
+        return { id }
+      } else {
+        // 1. Insert Purchase Request
+        const { data: prData, error: prErr } = await supabase
+          .from("purchase_requests")
+          .insert([
+            {
+              expected_date: expectedDate || null,
+              supplier_info: supplierInfo || null,
+              requested_by: profile?.id,
+              status: "requested",
+            },
+          ])
+          .select()
+          .single()
 
-      // 2. Insert Items
-      const itemsPayload = items.map((item) => ({
-        purchase_request_id: newPr.id,
-        product_name: item.product_name,
-        specs: item.specs || null,
-        quantity: item.quantity,
-      }))
+        if (prErr) throw prErr
+        const newPr = prData
 
-      const { error: itemsErr } = await supabase
-        .from("purchase_request_items")
-        .insert(itemsPayload)
-      
-      if (itemsErr) throw itemsErr
+        // 2. Insert Items
+        const itemsPayload = items.map((item) => ({
+          purchase_request_id: newPr.id,
+          product_name: item.product_name,
+          specs: item.specs || null,
+          quantity: item.quantity,
+        }))
 
-      // 3. Log to audit log
-      await supabase.from("audit_log").insert([
-        {
-          actor_id: profile?.id,
-          action: `Created Purchase Request ${newPr.request_no}`,
-          entity_type: "purchase_requests",
-          entity_id: newPr.id,
-          details: { total_items: items.length },
-        },
-      ])
+        const { error: itemsErr } = await supabase
+          .from("purchase_request_items")
+          .insert(itemsPayload)
+        
+        if (itemsErr) throw itemsErr
 
-      return newPr
+        // 3. Log to audit log
+        await supabase.from("audit_log").insert([
+          {
+            actor_id: profile?.id,
+            action: `Created Purchase Request ${newPr.request_no}`,
+            entity_type: "purchase_requests",
+            entity_id: newPr.id,
+            details: { total_items: items.length },
+          },
+        ])
+
+        return newPr
+      }
     },
-    onSuccess: () => {
+    onSuccess: (prResult) => {
       queryClient.invalidateQueries({ queryKey: ["purchase-requests"] })
-      toast.success("Purchase request raised successfully!")
-      navigate("/purchase-requests")
+      queryClient.invalidateQueries({ queryKey: ["purchase-request", prResult.id] })
+      toast.success(isEdit ? "Purchase request updated successfully!" : "Purchase request raised successfully!")
+      navigate(`/purchase-requests/${prResult.id}`)
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to submit request")
     },
   })
+
+  if (isEdit && isPrLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-24">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent font-semibold"></div>
+        <p className="text-sm text-muted-foreground font-semibold">Loading purchase request details for edit...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -215,7 +303,7 @@ export const PurchaseRequestCreate: React.FC = () => {
           Back to Requests
         </Button>
         <h1 className="text-xl font-bold tracking-tight text-slate-800 dark:text-white">
-          Raise Purchase Request
+          {isEdit ? `Edit Purchase Request: ${existingPr?.request_no || ""}` : "Raise Purchase Request"}
         </h1>
       </div>
 
@@ -477,11 +565,11 @@ export const PurchaseRequestCreate: React.FC = () => {
               >
                 {submitPrMutation.isPending ? (
                   <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"></div>
-                    Submitting...
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent font-semibold"></div>
+                    {isEdit ? "Saving Changes..." : "Submitting..."}
                   </div>
                 ) : (
-                  "Submit Purchase Request"
+                  isEdit ? "Save Request Changes" : "Submit Purchase Request"
                 )}
               </Button>
 

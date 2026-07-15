@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,6 +31,14 @@ import {
 } from "@/components/ui/table";
 import { Search, UserPlus, Phone, Mail, ChevronRight, Users2 } from "lucide-react";
 import PaginationUI from "@/components/PaginationUI";
+import {
+  Field,
+  FieldContent,
+  FieldLabel,
+  FieldTitle,
+} from "@/components/ui/field"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+
 
 // Form Schema
 const customerSchema = z.object({
@@ -52,6 +60,9 @@ export const CustomerList: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [page,setPage]=useState(1)
   const [limit,setLimit]=useState(10)
+  const [gotoPage,setGotoPage]=useState("")
+  const navigate = useNavigate();
+
 
 
   useEffect(()=>{
@@ -116,7 +127,9 @@ export const CustomerList: React.FC = () => {
           notes: values.notes || null,
           created_by: profile?.id,
         },
-      ]);
+      ])
+      .select()
+      .single();
       if (error) throw error;
       return data;
     },
@@ -131,9 +144,21 @@ export const CustomerList: React.FC = () => {
     },
   });
 
-  const onSubmit = (values: CustomerFormValues) => {
-    createCustomerMutation.mutate(values);
-  };
+const onSubmit = async (values: CustomerFormValues) => {
+  try {
+    const customer = await createCustomerMutation.mutateAsync(values);
+
+    if (gotoPage) {
+      if (gotoPage === "salesOrder") {
+        navigate(`/orders/create?customer_id=${customer.id}`);
+      } else {
+        navigate(`/complaints?customer_id=${customer.id}`);
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   
 
@@ -185,6 +210,27 @@ export const CustomerList: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor="notes">Internal Notes</Label>
                   <Textarea id="notes" {...register("notes")} placeholder="Preferences, tax details, terms..." rows={2} />
+                </div>
+
+                <div>
+                  <RadioGroup onValueChange={(value:string)=>setGotoPage(value)} className="flex max-md:flex-col md:items-center gap-2">
+      <FieldLabel htmlFor="salesOrder">
+        <Field orientation="horizontal">
+          <FieldContent>
+            <FieldTitle>Create Sales Order</FieldTitle>
+          </FieldContent>
+          <RadioGroupItem value="salesOrder" id="salesOrder" />
+        </Field>
+      </FieldLabel>
+      <FieldLabel htmlFor="fileComplaint">
+        <Field orientation="horizontal">
+          <FieldContent>
+            <FieldTitle>File Complaint</FieldTitle>
+          </FieldContent>
+          <RadioGroupItem value="fileComplaint" id="fileComplaint" />
+        </Field>
+      </FieldLabel>
+    </RadioGroup>
                 </div>
 
                 <DialogFooter className="pt-4">

@@ -287,6 +287,7 @@ export const CustomerDetail: React.FC = () => {
 
           {isSalesAdmin && (
             <Button
+            nativeButton={false}
               render={<Link to={`/orders/create?customer_id=${customer.id}`} />}
             >
               <Plus className="h-4 w-4" />
@@ -500,6 +501,7 @@ export const CustomerDetail: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               className="h-8 rounded-lg px-2.5 text-[10px]"
+                              nativeButton={false}
                             >
                               View Details
                             </Button>

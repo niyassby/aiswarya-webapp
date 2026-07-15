@@ -14,6 +14,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -39,6 +44,15 @@ import {
   LayoutGrid,
   AlertTriangle,
 } from "lucide-react"
+
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
 
 import {
   Select,
@@ -79,7 +93,8 @@ export const ComplaintList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [dialogOpen, setDialogOpen] = useState(false)
-  
+  const [popoverOpen, setPopoverOpen] = useState(false)
+
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -93,6 +108,7 @@ export const ComplaintList: React.FC = () => {
     handleSubmit,
     setValue,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ComplaintFormValues>({
     resolver: zodResolver(complaintSchema) as any,
@@ -113,7 +129,9 @@ export const ComplaintList: React.FC = () => {
       if (!profile) return []
       let query = supabase.from("complaints").select("id, status")
       if (!isSuperAdmin && !isManager) {
-        query = query.or(`raised_by.eq.${profile.id},assigned_to.eq.${profile.id},assigned_by.eq.${profile.id}`)
+        query = query.or(
+          `raised_by.eq.${profile.id},assigned_to.eq.${profile.id},assigned_by.eq.${profile.id}`
+        )
       }
       const { data } = await query
       return data || []
@@ -121,13 +139,19 @@ export const ComplaintList: React.FC = () => {
     enabled: !!profile,
   })
 
-  const { data: { complaints = [], totalCount = 0 } = {}, isLoading } = useQuery({
-    queryKey: ["complaints", profile?.id, page, searchTerm, statusFilter, pageSize],
-    queryFn: async () => {
-      if (!profile) return { complaints: [], totalCount: 0 }
-      let query = supabase
-        .from("complaints")
-        .select(
+  const { data: { complaints = [], totalCount = 0 } = {}, isLoading } =
+    useQuery({
+      queryKey: [
+        "complaints",
+        profile?.id,
+        page,
+        searchTerm,
+        statusFilter,
+        pageSize,
+      ],
+      queryFn: async () => {
+        if (!profile) return { complaints: [], totalCount: 0 }
+        let query = supabase.from("complaints").select(
           `
           *,
           customers (name),
@@ -136,31 +160,33 @@ export const ComplaintList: React.FC = () => {
         `,
           { count: "exact" }
         )
-      
-      if (!isSuperAdmin && !isManager) {
-        query = query.or(`raised_by.eq.${profile.id},assigned_to.eq.${profile.id},assigned_by.eq.${profile.id}`)
-      }
 
-      if (searchTerm) {
-        query = query.ilike("complaint_no", `%${searchTerm}%`)
-      }
+        if (!isSuperAdmin && !isManager) {
+          query = query.or(
+            `raised_by.eq.${profile.id},assigned_to.eq.${profile.id},assigned_by.eq.${profile.id}`
+          )
+        }
 
-      if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter)
-      }
+        if (searchTerm) {
+          query = query.ilike("complaint_no", `%${searchTerm}%`)
+        }
 
-      const from = (page - 1) * pageSize
-      const to = from + pageSize - 1
+        if (statusFilter !== "all") {
+          query = query.eq("status", statusFilter)
+        }
 
-      const { data, count, error } = await query
-        .order("created_at", { ascending: false })
-        .range(from, to)
+        const from = (page - 1) * pageSize
+        const to = from + pageSize - 1
 
-      if (error) throw error
-      return { complaints: data || [], totalCount: count || 0 }
-    },
-    enabled: !!profile,
-  })
+        const { data, count, error } = await query
+          .order("created_at", { ascending: false })
+          .range(from, to)
+
+        if (error) throw error
+        return { complaints: data || [], totalCount: count || 0 }
+      },
+      enabled: !!profile,
+    })
 
   const totalPages = Math.ceil(totalCount / pageSize)
 
@@ -169,7 +195,7 @@ export const ComplaintList: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("customers")
-        .select("*")
+        .select("id, name, phone")
         .order("name")
       if (error) throw error
       return data || []
@@ -190,14 +216,17 @@ export const ComplaintList: React.FC = () => {
 
   // Automatically open dialog if query params present
   useEffect(() => {
-    if (urlCustomerId) {
-      setValue("customer_id", urlCustomerId)
-      if (urlOrderId) {
-        setValue("order_id", urlOrderId)
-      }
-      setDialogOpen(true)
-    }
-  }, [urlCustomerId, urlOrderId, setValue])
+    if (!urlCustomerId || customers.length === 0) return
+    reset({
+      subject: "",
+      description: "",
+      customer_id: urlCustomerId,
+      order_id: urlOrderId ?? "",
+      priority: "medium",
+    })
+
+    setDialogOpen(true)
+  }, [urlCustomerId, urlOrderId, customers, reset])
 
   // Mutation to insert complaint
   const fileComplaintMutation = useMutation({
@@ -244,7 +273,7 @@ export const ComplaintList: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight ">
+          <h1 className="text-3xl font-bold tracking-tight">
             Complaints Board
           </h1>
           <p className="text-muted-foreground">
@@ -255,7 +284,7 @@ export const ComplaintList: React.FC = () => {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger
             render={
-              <Button >
+              <Button>
                 <Plus className="h-4 w-4" />
                 File Complaint
               </Button>
@@ -268,18 +297,41 @@ export const ComplaintList: React.FC = () => {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="customer_id">Select Customer *</Label>
-                <select
-                  id="customer_id"
-                  {...register("customer_id")}
-                  className="w-full rounded-xl border px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary bg-muted"
-                >
-                  <option value="">-- Choose Customer --</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} {c.phone ? `(${c.phone})` : ""}
-                    </option>
-                  ))}
-                </select>
+                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        className={"flex w-full justify-start text-xs"}
+                        variant="outline"
+                      />
+                    }
+                  >
+                    {customers.find((c) => c.id === watch("customer_id"))
+                      ?.name ?? "Select Customer"}
+                  </PopoverTrigger>
+                  <PopoverContent className={"p-0"}>
+                    <Command>
+                      <CommandInput placeholder="Type a command or search..." />
+                      <CommandList>
+                        <CommandEmpty>No results found.</CommandEmpty>
+                        <CommandGroup heading="Suggestions">
+                          {customers.map((c) => (
+                            <CommandItem
+                              onSelect={() => {
+                                setValue("customer_id", c.id)
+                                setPopoverOpen(false)
+                              }}
+                              key={c.id}
+                              value={c.name}
+                            >
+                              {c.name} {c.phone ? `(${c.phone})` : ""}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 {errors.customer_id && (
                   <p className="text-xs text-rose-500">
                     {errors.customer_id.message}
@@ -293,7 +345,7 @@ export const ComplaintList: React.FC = () => {
                   <select
                     id="order_id"
                     {...register("order_id")}
-                    className="w-full rounded-xl border px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary bg-muted"
+                    className="w-full rounded-xl border bg-muted px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="">No Linked Order</option>
                     {orders.map((o) => (
@@ -309,7 +361,7 @@ export const ComplaintList: React.FC = () => {
                   <select
                     id="priority"
                     {...register("priority")}
-                    className="w-full rounded-xl border px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary bg-muted"
+                    className="w-full rounded-xl border bg-muted px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -384,7 +436,9 @@ export const ComplaintList: React.FC = () => {
             <span className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
               Total Cases
             </span>
-            <h3 className="mt-0.5 text-xl font-bold">{complaintMetrics.length}</h3>
+            <h3 className="mt-0.5 text-xl font-bold">
+              {complaintMetrics.length}
+            </h3>
           </div>
         </div>
 
@@ -423,7 +477,7 @@ export const ComplaintList: React.FC = () => {
 
       {/* Filters and Table */}
       <div className="overflow-hidden rounded-2xl border bg-card">
-        <div className="flex flex-col items-center md:justify-between gap-4 border-b p-5 sm:flex-row w-full">
+        <div className="flex w-full flex-col items-center gap-4 border-b p-5 sm:flex-row md:justify-between">
           <div className="relative w-full max-w-sm">
             <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -437,24 +491,28 @@ export const ComplaintList: React.FC = () => {
             />
           </div>
 
-             <Select items={items} value={statusFilter} onValueChange={(value:any)=>{
+          <Select
+            items={items}
+            value={statusFilter}
+            onValueChange={(value: any) => {
               setStatusFilter(value)
               setPage(1)
-             }}>
-      <SelectTrigger className="w-full md:max-w-45">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          <SelectLabel>Status</SelectLabel>
-          {items.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+            }}
+          >
+            <SelectTrigger className="w-full md:max-w-45">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Status</SelectLabel>
+                {items.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="overflow-x-auto">
@@ -488,9 +546,7 @@ export const ComplaintList: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {complaints.map((c) => (
-                  <TableRow
-                    key={c.id}
-                  >
+                  <TableRow key={c.id}>
                     <TableCell className="text-slate-850 dark:text-slate-350 font-mono font-bold">
                       {c.complaint_no}
                     </TableCell>
@@ -555,6 +611,7 @@ export const ComplaintList: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         className="flex items-center gap-1 rounded-xl"
+                        nativeButton={false}
                       >
                         Open Thread
                         <ArrowUpRight className="h-4 w-4" />
@@ -566,7 +623,7 @@ export const ComplaintList: React.FC = () => {
             </Table>
           )}
         </div>
-        
+
         {/* Pagination */}
         {totalPages > 1 && (
           <PaginationUI

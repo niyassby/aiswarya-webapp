@@ -63,7 +63,7 @@ export const OrderList: React.FC = () => {
 
   // Metrics Query
   const { data: orderMetrics = [] } = useQuery({
-    queryKey: ["orders-metrics", user?.id],
+    queryKey: ["orders-metrics", user?.id, operatorFilter, statusFilter, daysFilter],
     queryFn: async () => {
       if (!user) return []
       let query = supabase.from("orders").select("id, status")
@@ -72,6 +72,32 @@ export const OrderList: React.FC = () => {
       } else if (isAccounts && !isSuperAdmin && !isManager) {
         query = query.neq("status", "enquiry")
       }
+
+      if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter)
+      }
+
+      // Operator filter (super admin and manager only)
+      if ((isSuperAdmin || isManager) && operatorFilter !== "all") {
+        query = query.eq("created_by", operatorFilter)
+      }
+
+      // Days filter (super admin and manager only)
+      if ((isSuperAdmin || isManager) && daysFilter !== "all") {
+        if (daysFilter === "today") {
+          const startOfToday = new Date()
+          startOfToday.setHours(0, 0, 0, 0)
+          query = query.gte("created_at", startOfToday.toISOString())
+        } else {
+          const days = parseInt(daysFilter)
+          if (!isNaN(days)) {
+            const dateLimit = new Date()
+            dateLimit.setDate(dateLimit.getDate() - days)
+            query = query.gte("created_at", dateLimit.toISOString())
+          }
+        }
+      }
+
       const { data } = await query
       return data || []
     },
@@ -139,11 +165,17 @@ export const OrderList: React.FC = () => {
 
       // Days filter (super admin and manager only)
       if ((isSuperAdmin || isManager) && daysFilter !== "all") {
-        const days = parseInt(daysFilter)
-        if (!isNaN(days)) {
-          const dateLimit = new Date()
-          dateLimit.setDate(dateLimit.getDate() - days)
-          query = query.gte("created_at", dateLimit.toISOString())
+        if (daysFilter === "today") {
+          const startOfToday = new Date()
+          startOfToday.setHours(0, 0, 0, 0)
+          query = query.gte("created_at", startOfToday.toISOString())
+        } else {
+          const days = parseInt(daysFilter)
+          if (!isNaN(days)) {
+            const dateLimit = new Date()
+            dateLimit.setDate(dateLimit.getDate() - days)
+            query = query.gte("created_at", dateLimit.toISOString())
+          }
         }
       }
 
@@ -317,6 +349,7 @@ export const OrderList: React.FC = () => {
                       <SelectGroup>
                         <SelectLabel>Time Period</SelectLabel>
                         <SelectItem value="all">All Time</SelectItem>
+                        <SelectItem value="today">Today</SelectItem>
                         <SelectItem value="1">Last 24 Hours</SelectItem>
                         <SelectItem value="7">Last 7 Days</SelectItem>
                         <SelectItem value="30">Last 30 Days</SelectItem>

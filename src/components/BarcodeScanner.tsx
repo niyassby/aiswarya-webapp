@@ -154,7 +154,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           {/* Viewfinder overlay with animated scanning line */}
           {scanning && !error && (
             <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-              <div className="w-[280px] h-[120px] border border-primary/50 rounded-lg relative overflow-hidden bg-white/5 backdrop-brightness-50 shadow-[0_0_10px_rgba(var(--primary),0.2)]">
+              <div className="w-[280px] h-[120px]  relative overflow-hidden ">
                 {/* Horizontal scanning laser line */}
                 <div className="absolute left-0 w-full h-px bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-[scan_2s_ease-in-out_infinite]" />
               </div>

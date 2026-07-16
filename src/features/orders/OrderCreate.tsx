@@ -99,12 +99,14 @@ export const OrderCreate: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select("name, barcode, specs, unit_price")
         .order("name")
       if (error) throw error
       return data || []
     },
   })
+  console.log(products);
+  
 
   useEffect(() => {
     if (isEdit && existingOrder) {
@@ -468,9 +470,9 @@ export const OrderCreate: React.FC = () => {
                         No product matches found. Add a custom row instead!
                       </div>
                     ) : (
-                      filteredProducts.map((p) => (
+                      filteredProducts.map((p, i) => (
                         <button
-                          key={p.id}
+                          key={i}
                           type="button"
                           onClick={() => handleAddProduct(p)}
                           className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs hover:bg-secondary"
@@ -582,8 +584,7 @@ export const OrderCreate: React.FC = () => {
                             )}
                           </TableCell>
                           <TableCell >
-                            {item.is_custom ? (
-                              <div className="space-y-1.5">
+                            <div className="space-y-1.5">
                                 <Input
                                   value={item.specs || ""}
                                   onChange={(e) =>
@@ -597,44 +598,7 @@ export const OrderCreate: React.FC = () => {
                                   className="w-fit"
                                 />
                               </div>
-                            ) : (
-                              <div className="space-y-0.5">
-                                <span className="block max-w-[200px] truncate text-[10px] text-muted-foreground">
-                                  {item.specs || "-"}
-                                </span>
-                              </div>
-                            )}
                           </TableCell>
-                          {/* <TableCell >
-                            {item.is_custom ? (
-                              <Input
-                                type="number"
-                                step="0.01"
-                                value={item.unit_price}
-                                onChange={(e) =>
-                                  handleUpdateItem(item.id, "unit_price", Number(e.target.value))
-                                }
-                                className="h-8 text-xs font-semibold w-20 rounded-lg"
-                              />
-                            ) : (
-                              <span className="text-xs font-medium">₹{item.unit_price.toFixed(2)}</span>
-                            )}
-                          </TableCell> */}
-                          {/* <TableCell >
-                            <Input
-                              type="number"
-                              // min="1"
-                              value={item.quantity}
-                              onChange={(e) =>
-                                handleUpdateItem(
-                                  item.id,
-                                  "quantity",
-                                  Math.max(1, Number(e.target.value))
-                                )
-                              }
-                              className=""
-                            />
-                          </TableCell> */}
                           <TableCell >
                             <ButtonGroup>
                               <Button size={'icon'} onClick={()=> handleUpdateItem(item.id, "quantity",  Math.max(1,item.quantity - 1))} variant="outline">
@@ -643,6 +607,7 @@ export const OrderCreate: React.FC = () => {
                               <Input
                               type="number"
                               // min="1"
+                              onFocus={(e) => e.target.select()}
                               value={item.quantity}
                               onChange={(e) =>
                                 handleUpdateItem(

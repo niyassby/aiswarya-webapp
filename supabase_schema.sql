@@ -407,3 +407,315 @@ create policy "Allow user role insertion during registration" on user_roles
 create policy "Allow invitation deletion by authenticated users" on invited_users
   for delete using (true);
 
+
+-- ==========================================
+-- 5. NOTIFICATIONS SCHEMA & TRIGGERS
+-- ==========================================
+
+create table notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  title text not null,
+  message text not null,
+  type text not null,
+  link text,
+  is_read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+-- Enable RLS on notifications
+alter table notifications enable row level security;
+
+-- Policies for notifications
+create policy "Allow reading own notifications" on notifications
+  for select using (auth.uid() = user_id);
+
+create policy "Allow updating own notifications" on notifications
+  for update using (auth.uid() = user_id);
+
+create policy "Allow deleting own notifications" on notifications
+  for delete using (auth.uid() = user_id);
+
+-- Trigger for Orders
+create or replace function handle_order_notification()
+returns trigger as $$
+declare
+  recipient_id uuid;
+  actor_id uuid;
+  actor_name text;
+  notif_title text;
+  notif_message text;
+  notif_type text;
+  notif_link text;
+begin
+  actor_id := auth.uid();
+  
+  if actor_id is not null then
+    select full_name into actor_name from public.profiles where id = actor_id;
+  else
+    actor_name := 'System';
+  end if;
+
+  notif_link := '/orders/' || new.id;
+
+  if TG_OP = 'INSERT' then
+    notif_title := 'New Order Created';
+    notif_message := 'Order ' || new.order_no || ' was created by ' || actor_name || '.';
+    notif_type := 'order_created';
+  elsif TG_OP = 'UPDATE' then
+    if old.status = new.status then
+      return new;
+    end if;
+    notif_title := 'Order Status Updated';
+    notif_message := 'Order ' || new.order_no || ' status changed from ' || old.status || ' to ' || new.status || ' by ' || actor_name || '.';
+    notif_type := 'order_updated';
+  end if;
+
+  for recipient_id in
+    select distinct ur.user_id 
+    from public.user_roles ur
+    where ur.user_id != coalesce(actor_id, '00000000-0000-0000-0000-000000000000'::uuid)
+      and (
+        ur.role in ('manager', 'super_admin')
+        or (ur.role = 'accounts' and new.status != 'enquiry')
+        or (ur.user_id = new.created_by)
+      )
+  loop
+    insert into public.notifications (user_id, title, message, type, link)
+    values (recipient_id, notif_title, notif_message, notif_type, notif_link);
+  end loop;
+
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_order_action
+  after insert or update on public.orders
+  for each row execute function public.handle_order_notification();
+
+-- Trigger for Purchase Requests
+create or replace function handle_purchase_request_notification()
+returns trigger as $$
+declare
+  recipient_id uuid;
+  actor_id uuid;
+  actor_name text;
+  notif_title text;
+  notif_message text;
+  notif_type text;
+  notif_link text;
+begin
+  actor_id := auth.uid();
+  
+  if actor_id is not null then
+    select full_name into actor_name from public.profiles where id = actor_id;
+  else
+    actor_name := 'System';
+  end if;
+
+  notif_link := '/purchase-requests/' || new.id;
+
+  if TG_OP = 'INSERT' then
+    notif_title := 'New Purchase Request';
+    notif_message := 'Purchase Request ' || new.request_no || ' was created by ' || actor_name || '.';
+    notif_type := 'purchase_request_created';
+  elsif TG_OP = 'UPDATE' then
+    if old.status = new.status then
+      return new;
+    end if;
+    notif_title := 'Purchase Request Updated';
+    notif_message := 'Purchase Request ' || new.request_no || ' status changed from ' || old.status || ' to ' || new.status || ' by ' || actor_name || '.';
+    notif_type := 'purchase_request_updated';
+  end if;
+
+  for recipient_id in
+    select distinct ur.user_id 
+    from public.user_roles ur
+    where ur.user_id != coalesce(actor_id, '00000000-0000-0000-0000-000000000000'::uuid)
+      and (
+        ur.role in ('manager', 'super_admin', 'accounts')
+        or (ur.user_id = new.requested_by)
+      )
+  loop
+    insert into public.notifications (user_id, title, message, type, link)
+    values (recipient_id, notif_title, notif_message, notif_type, notif_link);
+  end loop;
+
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_purchase_request_action
+  after insert or update on public.purchase_requests
+  for each row execute function public.handle_purchase_request_notification();
+
+-- Trigger for Purchase Request Comments
+create or replace function handle_purchase_request_comment_notification()
+returns trigger as $$
+declare
+  recipient_id uuid;
+  actor_id uuid;
+  actor_name text;
+  notif_title text;
+  notif_message text;
+  notif_type text;
+  notif_link text;
+  pr_no text;
+  pr_requested_by uuid;
+begin
+  actor_id := auth.uid();
+  
+  if actor_id is not null then
+    select full_name into actor_name from public.profiles where id = actor_id;
+  else
+    actor_name := 'System';
+  end if;
+
+  select request_no, requested_by 
+  into pr_no, pr_requested_by 
+  from public.purchase_requests 
+  where id = new.purchase_request_id;
+
+  notif_link := '/purchase-requests/' || new.purchase_request_id;
+  notif_title := 'New Comment on PR';
+  notif_message := 'New comment added on PR ' || pr_no || ' by ' || actor_name || '.';
+  notif_type := 'purchase_request_comment_created';
+
+  for recipient_id in
+    select distinct u.user_id from (
+      select ur.user_id from public.user_roles ur where ur.role in ('manager', 'super_admin', 'accounts')
+      union
+      select pr_requested_by
+    ) u
+    where u.user_id != coalesce(actor_id, '00000000-0000-0000-0000-000000000000'::uuid)
+  loop
+    insert into public.notifications (user_id, title, message, type, link)
+    values (recipient_id, notif_title, notif_message, notif_type, notif_link);
+  end loop;
+
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_purchase_request_comment_action
+  after insert on public.purchase_request_comments
+  for each row execute function public.handle_purchase_request_comment_notification();
+
+-- Trigger for Complaints
+create or replace function handle_complaint_notification()
+returns trigger as $$
+declare
+  recipient_id uuid;
+  actor_id uuid;
+  actor_name text;
+  notif_title text;
+  notif_message text;
+  notif_type text;
+  notif_link text;
+begin
+  actor_id := auth.uid();
+  
+  if actor_id is not null then
+    select full_name into actor_name from public.profiles where id = actor_id;
+  else
+    actor_name := 'System';
+  end if;
+
+  notif_link := '/complaints/' || new.id;
+
+  if TG_OP = 'INSERT' then
+    notif_title := 'New Complaint Filed';
+    notif_message := 'Complaint ' || new.complaint_no || ' was raised by ' || actor_name || '.';
+    notif_type := 'complaint_created';
+  elsif TG_OP = 'UPDATE' then
+    if old.status = new.status and old.assigned_to is not distinct from new.assigned_to and old.priority = new.priority then
+      return new;
+    end if;
+    notif_title := 'Complaint Updated';
+    notif_message := 'Complaint ' || new.complaint_no || ' was updated by ' || actor_name || '.';
+    notif_type := 'complaint_updated';
+  end if;
+
+  for recipient_id in
+    select distinct u.user_id from (
+      select ur.user_id from public.user_roles ur where ur.role in ('manager', 'super_admin')
+      union
+      select new.raised_by
+      union
+      select new.assigned_to where new.assigned_to is not null
+      union
+      select new.assigned_by where new.assigned_by is not null
+    ) u
+    where u.user_id != coalesce(actor_id, '00000000-0000-0000-0000-000000000000'::uuid)
+  loop
+    insert into public.notifications (user_id, title, message, type, link)
+    values (recipient_id, notif_title, notif_message, notif_type, notif_link);
+  end loop;
+
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_complaint_action
+  after insert or update on public.complaints
+  for each row execute function public.handle_complaint_notification();
+
+-- Trigger for Complaint Comments
+create or replace function handle_complaint_comment_notification()
+returns trigger as $$
+declare
+  recipient_id uuid;
+  actor_id uuid;
+  actor_name text;
+  notif_title text;
+  notif_message text;
+  notif_type text;
+  notif_link text;
+  comp_no text;
+  comp_raised_by uuid;
+  comp_assigned_to uuid;
+begin
+  actor_id := auth.uid();
+  
+  if actor_id is not null then
+    select full_name into actor_name from public.profiles where id = actor_id;
+  else
+    actor_name := 'System';
+  end if;
+
+  select complaint_no, raised_by, assigned_to 
+  into comp_no, comp_raised_by, comp_assigned_to 
+  from public.complaints 
+  where id = new.complaint_id;
+
+  notif_link := '/complaints/' || new.complaint_id;
+  notif_title := 'New Comment on Complaint';
+  notif_message := 'New comment added on ' || comp_no || ' by ' || actor_name || '.';
+  notif_type := 'complaint_comment_created';
+
+  for recipient_id in
+    select distinct u.user_id from (
+      select ur.user_id from public.user_roles ur where ur.role in ('manager', 'super_admin')
+      union
+      select comp_raised_by
+      union
+      select comp_assigned_to where comp_assigned_to is not null
+    ) u
+    where u.user_id != coalesce(actor_id, '00000000-0000-0000-0000-000000000000'::uuid)
+  loop
+    insert into public.notifications (user_id, title, message, type, link)
+    values (recipient_id, notif_title, notif_message, notif_type, notif_link);
+  end loop;
+
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_complaint_comment_action
+  after insert on public.complaint_comments
+  for each row execute function public.handle_complaint_comment_notification();
+
+-- Enable Realtime
+alter publication supabase_realtime add table notifications;
+
+

@@ -72,7 +72,7 @@ const toastViewportVariants = cva(
 )
 
 const toastButtonVariants = cva(
-  `flex h-8 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-none border px-3 py-0 font-[inherit] text-sm leading-none font-normal whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-neutral-950 active:not-data-disabled:scale-[0.97] disabled:border-neutral-500 disabled:text-neutral-500 data-disabled:border-neutral-500 data-disabled:text-neutral-500`,
+  `flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-none border px-3 py-1.5 font-[inherit] text-sm leading-none font-normal whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-neutral-950 active:not-data-disabled:scale-[0.97] disabled:border-neutral-500 disabled:text-neutral-500 data-disabled:border-neutral-500 data-disabled:text-neutral-500`,
   {
     variants: {
       variant: {
@@ -374,6 +374,7 @@ function ToastList({ position }: { position?: ToastPosition }) {
             <Toast.Title className="text-sm font-bold" />
             <Toast.Description className="text-xs opacity-90" />
           </div>
+          <div className="flex flex-col gap-1">
 
           {toast.data?.action && (
             <Toast.Action
@@ -391,11 +392,12 @@ function ToastList({ position }: { position?: ToastPosition }) {
 
           <Toast.Close
             className={toastButtonVariants({
-              variant: activeVariant,
+              variant: activeVariant
             })}
           >
             Dismiss
           </Toast.Close>
+          </div>
         </Toast.Content>
       </Toast.Root>
     )

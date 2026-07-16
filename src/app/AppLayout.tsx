@@ -20,6 +20,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { ModeToggle } from "@/components/mode-toggle"
+import { NotificationDropdown } from "@/components/NotificationDropdown"
+
 
 interface NavItem {
   name: string
@@ -258,7 +260,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
           </div>
 
           <div className="flex items-center gap-3">
-           <ModeToggle/>
+            <NotificationDropdown />
+            <ModeToggle/>
           </div>
         </header>
 

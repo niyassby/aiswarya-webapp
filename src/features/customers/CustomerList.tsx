@@ -38,6 +38,7 @@ import {
   FieldTitle,
 } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { useRole } from "@/hooks/useRole";
 
 
 // Form Schema
@@ -53,8 +54,8 @@ type CustomerFormValues = z.infer<typeof customerSchema>;
 
 export const CustomerList: React.FC = () => {
   const queryClient = useQueryClient();
-  // const { isSalesAdmin, isSuperAdmin } = useRole();
-  const { profile } = useAuth();
+  const { isSalesAdmin, isManager, isSuperAdmin } = useRole();
+  const { profile, user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [debounceSearchTerm,setDebounceSearchTerm]=useState("")
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -96,13 +97,17 @@ export const CustomerList: React.FC = () => {
     queryFn: async () => {
         let query = supabase
           .from("customers")
-          .select("*", { count: "exact" })
+          .select("*, created_by(full_name)", { count: "exact" })
           .order("created_at", { ascending: false });
 
         if (debounceSearchTerm) {
           query = query.or(
             `name.ilike.%${debounceSearchTerm}%,phone.ilike.%${debounceSearchTerm}%`
           );
+        }
+
+        if (isSalesAdmin && !isSuperAdmin && !isManager) {
+          query = query.eq("created_by", user?.id)
         }
 
         const { data, error, count } = await query.range(
@@ -114,6 +119,8 @@ export const CustomerList: React.FC = () => {
     },
   });
   const totalPages = Math.ceil(totalCount / limit);
+  console.log(customers);
+  
 
   // Mutation to create customer
   const createCustomerMutation = useMutation({
@@ -293,7 +300,9 @@ const onSubmit = async (values: CustomerFormValues) => {
                   <TableHead className="font-semibold">Phone No</TableHead>
                   <TableHead className="font-semibold">Email</TableHead>
                   <TableHead className="font-semibold">Address</TableHead>
-                  <TableHead className="font-semibold">Notes</TableHead>
+                  {(isSuperAdmin || isManager) && (
+                                      <TableHead className="font-semibold">Operator</TableHead>
+                                    )}
                   <TableHead className="">Actions</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
@@ -321,18 +330,18 @@ const onSubmit = async (values: CustomerFormValues) => {
                     <TableCell className="max-w-xs truncate text-xs text-muted-foreground">
                       {customer.address || "-"}
                     </TableCell>
-                    <TableCell className="max-w-xs truncate text-xs text-muted-foreground">
-                      {customer.notes || "-"}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
+                    {(isSuperAdmin || isManager) && (<TableCell className="max-w-xs truncate text-xs text-muted-foreground">
+                      {customer.created_by?.full_name || "-"}
+                    </TableCell>)}
+                    <TableCell className="font-mono text-xs w-fit ">
                       <div className="space-x-2">
-                        <Button nativeButton={false} render={<Link to={`/orders/create?customer_id=${customer.id}`} />} variant="secondary" size="sm"> Order</Button>
-                        <Button nativeButton={false} render={<Link to={`/complaints?customer_id=${customer.id}`} />} variant="outline" size="sm"> Complaint</Button>
+                        <Button nativeButton={false} render={<Link to={`/orders/create?customer_id=${customer.id}`} />} variant="outline" size="sm"> Order</Button>
+                        <Button nativeButton={false} render={<Link to={`/complaints?customer_id=${customer.id}`} />} variant="destructive" size="sm"> Complaint</Button>
                       </div>
                     </TableCell>
                     <TableCell>
                       <Button nativeButton={false} render={<Link to={`/customers/${customer.id}`} />} variant="ghost" size="sm" className="rounded-xl flex items-center gap-1">
-                        View Profile
+                        Profile
                         <ChevronRight className="h-4 w-4" />
                       </Button>
                     </TableCell>

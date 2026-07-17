@@ -466,6 +466,7 @@ export const PurchaseRequestCreate: React.FC = () => {
                               </Button>
                               <Input
                                 type="number"
+                                onFocus={(e) => e.target.select()}
                                 value={item.quantity}
                                 onChange={(e) =>
                                   handleUpdateItem(

@@ -214,6 +214,24 @@ export const ComplaintList: React.FC = () => {
     },
   })
 
+  const selectedCustomerId = watch("customer_id")
+  const filteredOrders = orders.filter(
+    (o: any) => o.customer_id === selectedCustomerId
+  )
+
+  useEffect(() => {
+    const currentOrderId = watch("order_id")
+    if (currentOrderId) {
+      const orderExistsForCustomer = orders.some(
+        (o: any) =>
+          o.id === currentOrderId && o.customer_id === selectedCustomerId
+      )
+      if (!orderExistsForCustomer) {
+        setValue("order_id", "")
+      }
+    }
+  }, [selectedCustomerId, setValue, orders])
+
   // Automatically open dialog if query params present
   useEffect(() => {
     if (!urlCustomerId || customers.length === 0) return
@@ -309,7 +327,7 @@ export const ComplaintList: React.FC = () => {
                     {customers.find((c) => c.id === watch("customer_id"))
                       ?.name ?? "Select Customer"}
                   </PopoverTrigger>
-                  <PopoverContent className={"p-0"}>
+                  <PopoverContent side="bottom" className={"p-0"}>
                     <Command>
                       <CommandInput placeholder="Type a command or search..." />
                       <CommandList>
@@ -342,32 +360,63 @@ export const ComplaintList: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="order_id">Linked Order</Label>
-                  <select
-                    id="order_id"
-                    {...register("order_id")}
-                    className="w-full rounded-xl border bg-muted px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary"
+                  <Select
+                    disabled={
+                      !selectedCustomerId || filteredOrders.length === 0
+                    }
+                    value={
+                      filteredOrders?.find(
+                        (o: any) => o.id === watch("order_id")
+                      )?.order_no
+                    }
+                    onValueChange={(value: any) => setValue("order_id", value)}
+                    items={filteredOrders?.map((item) => ({
+                      label: item.order_no,
+                      value: item.id,
+                    }))}
                   >
-                    <option value="">No Linked Order</option>
-                    {orders.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.order_no}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-full">
+                      <SelectValue
+                        placeholder={
+                          !selectedCustomerId
+                            ? "Select a customer first"
+                            : filteredOrders.length === 0
+                              ? "No Orders Available"
+                              : "No Linked Order"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent alignItemWithTrigger={false}>
+                      <SelectGroup>
+                        {filteredOrders?.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.order_no}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="priority">Priority *</Label>
-                  <select
+                  <Select
                     id="priority"
-                    {...register("priority")}
-                    className="w-full rounded-xl border bg-muted px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary"
+                    value={watch("priority")}
+                    onValueChange={(value: any) => setValue("priority", value)}
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
+                    <SelectTrigger className="w-full capitalize">
+                      <SelectValue placeholder="Select Priority" />
+                    </SelectTrigger>
+                    <SelectContent alignItemWithTrigger={false}>
+                      <SelectGroup>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

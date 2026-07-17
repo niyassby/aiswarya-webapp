@@ -23,22 +23,8 @@ import {
   Trash2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { formatDistance } from "date-fns"
+import { formatDistanceToNow } from "date-fns"
 
-// function formatRelativeTime(dateString: string): string {
-//   const now = new Date()
-//   const past = new Date(dateString)
-//   const diffMs = now.getTime() - past.getTime()
-//   const diffMins = Math.floor(diffMs / 60000)
-//   const diffHours = Math.floor(diffMins / 60)
-//   const diffDays = Math.floor(diffHours / 24)
-
-//   if (diffMins < 1) return "Just now"
-//   if (diffMins < 60) return `${diffMins}m ago`
-//   if (diffHours < 24) return `${diffHours}h ago`
-//   if (diffDays === 1) return "Yesterday"
-//   return past.toLocaleDateString()
-// }
 
 function getNotificationIcon(type: string) {
   switch (type) {
@@ -105,13 +91,13 @@ export const NotificationDropdown: React.FC = () => {
       <PopoverTrigger
         render={
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="relative rounded-lg hover:bg-muted"
+            className="relative"
           >
             <Bell className="h-5 w-5 text-muted-foreground" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 animate-pulse items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-background">
+              <span className="absolute -top-1 -right-1 flex size-4.5 animate-pulse items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-background">
                 {unreadCount}
               </span>
             )}
@@ -119,7 +105,7 @@ export const NotificationDropdown: React.FC = () => {
         }
       />
 
-      <PopoverContent align="end" className="w-80 p-0 md:w-96">
+      <PopoverContent align="end" alignOffset={-10} className="w-80 p-0 md:w-96">
         <div className="flex items-center justify-between p-4 pb-2">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <h3 className="text-sm font-semibold">Notifications</h3>
@@ -200,7 +186,7 @@ export const NotificationDropdown: React.FC = () => {
                       </p>
                       <span className="shrink-0 text-[9px] font-medium text-muted-foreground">
                         {/* {formatRelativeTime(notif.created_at)} */}
-                        {formatDistance(new Date(notif.created_at), new Date(), {
+                        {formatDistanceToNow(new Date(notif.created_at), {
                           addSuffix: true
                         })}
                       </span>

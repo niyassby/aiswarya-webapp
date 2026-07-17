@@ -426,13 +426,28 @@ export const OrderDetail: React.FC = () => {
         </Button>
 
         <div className="flex gap-2">
+          {/* Quick File Complaint */}
+          <Button
+            render={
+              <Link
+                to={`/complaints?customer_id=${order.customer_id}&order_id=${order.id}`}
+              />
+            }
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            className="text-xs"
+          >
+            <MessageSquareWarning className="h-4 w-4 text-rose-500" />
+            Complaint
+          </Button>
           {/* Edit Order */}
           {(isSalesAdmin || isSuperAdmin) && (
             <Button
               render={<Link to={`/orders/${order.id}/edit`} />}
               variant="outline"
               size="sm"
-              className="gap-1.5 rounded-xl text-xs shadow-sm"
+              className="text-xs"
               nativeButton={false}
             >
               Edit Order
@@ -443,29 +458,15 @@ export const OrderDetail: React.FC = () => {
           {(isSuperAdmin || isManager) && (
             <Button
               onClick={handleDelete}
-              variant="outline"
+              variant="destructive"
               size="sm"
+              className="text-xs"
               disabled={deleteOrderMutation.isPending}
-              className="gap-1.5 rounded-xl text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-rose-200 dark:border-rose-900/50"
             >
               Delete Order
             </Button>
           )}
 
-          {/* Quick File Complaint */}
-          <Button
-            render={
-              <Link
-                to={`/complaints?customer_id=${order.customer_id}&order_id=${order.id}`}
-              />
-            }
-            variant="outline"
-            className="gap-1.5 rounded-xl text-xs shadow-sm"
-            nativeButton={false}
-          >
-            <MessageSquareWarning className="h-4 w-4 text-rose-500" />
-            Complaint
-          </Button>
         </div>
       </div>
 

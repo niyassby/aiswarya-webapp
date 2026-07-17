@@ -606,7 +606,7 @@ export const OrderCreate: React.FC = () => {
                               </Button>
                               <Input
                               type="number"
-                              // min="1"
+                              min={1}
                               onFocus={(e) => e.target.select()}
                               value={item.quantity}
                               onChange={(e) =>

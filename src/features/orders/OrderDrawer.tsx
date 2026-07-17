@@ -139,6 +139,7 @@ export function OrderDrawer({
               <Input
                 type="number"
                 min={1}
+                onFocus={(e) => e.target.select()}
                 className="text-center"
                 value={item.quantity}
                 onChange={(e) =>

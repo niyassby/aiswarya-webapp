@@ -259,9 +259,9 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <NotificationDropdown />
+          <div className="flex items-center gap-2">
             <ModeToggle/>
+            <NotificationDropdown />
           </div>
         </header>
 

@@ -99,14 +99,12 @@ export const OrderCreate: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("name, barcode, specs, unit_price")
+        .select("name, barcode, specs, unit_price, id")
         .order("name")
       if (error) throw error
       return data || []
     },
   })
-  console.log(products);
-  
 
   useEffect(() => {
     if (isEdit && existingOrder) {

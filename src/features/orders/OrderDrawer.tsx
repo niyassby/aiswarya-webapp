@@ -17,7 +17,6 @@ import type { CheckoutItem } from "./OrderCreate"
 import { ButtonGroup } from "@/components/ui/button-group"
 import { Minus, Plus } from "lucide-react"
 
-
 const initialItem: CheckoutItem = {
   id: "",
   item_name: "",
@@ -41,9 +40,7 @@ export function OrderDrawer({
     if (open) {
       setItem({
         ...initialItem,
-        id: `custom-${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2, 6)}`,
+        id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       })
     }
   }, [open])
@@ -92,9 +89,7 @@ export function OrderDrawer({
             <Input
               value={item.item_name}
               placeholder="Item Name"
-              onChange={(e) =>
-                handleChange("item_name", e.target.value)
-              }
+              onChange={(e) => handleChange("item_name", e.target.value)}
             />
           </div>
 
@@ -103,9 +98,7 @@ export function OrderDrawer({
             <Input
               value={item.barcode ?? ""}
               placeholder="Barcode"
-              onChange={(e) =>
-                handleChange("barcode", e.target.value)
-              }
+              onChange={(e) => handleChange("barcode", e.target.value)}
             />
           </div>
 
@@ -114,9 +107,7 @@ export function OrderDrawer({
             <Input
               value={item.specs || ""}
               placeholder="Specifications"
-              onChange={(e) =>
-                handleChange("specs", e.target.value)
-              }
+              onChange={(e) => handleChange("specs", e.target.value)}
             />
           </div>
 
@@ -127,10 +118,7 @@ export function OrderDrawer({
               <Button
                 variant="outline"
                 onClick={() =>
-                  handleChange(
-                    "quantity",
-                    Math.max(1, item.quantity - 1)
-                  )
+                  handleChange("quantity", Math.max(1, item.quantity - 1))
                 }
               >
                 <Minus />
@@ -152,9 +140,7 @@ export function OrderDrawer({
 
               <Button
                 variant="outline"
-                onClick={() =>
-                  handleChange("quantity", item.quantity + 1)
-                }
+                onClick={() => handleChange("quantity", item.quantity + 1)}
               >
                 <Plus />
               </Button>
@@ -163,9 +149,7 @@ export function OrderDrawer({
         </div>
 
         <DrawerFooter>
-          <Button onClick={handleSubmit}>
-            Add Item
-          </Button>
+          <Button onClick={handleSubmit}>Add Item</Button>
 
           <DrawerClose
             render={<Button variant="outline">Cancel</Button>}

@@ -82,7 +82,8 @@ export const PurchaseRequestList: React.FC = () => {
         profile?.id,
         page,
         searchTerm,
-        statusFilter,pageSize
+        statusFilter,
+        pageSize,
       ],
       queryFn: async () => {
         if (!profile) return { purchaseRequests: [], totalCount: 0 }
@@ -214,7 +215,7 @@ export const PurchaseRequestList: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight ">
+          <h1 className="text-3xl font-bold tracking-tight">
             Purchase Requests
           </h1>
           <p className="text-muted-foreground">
@@ -290,32 +291,32 @@ export const PurchaseRequestList: React.FC = () => {
                 setSearchTerm(e.target.value)
                 setPage(1)
               }}
-              className=" pl-10"
+              className="pl-10"
             />
           </div>
 
-            <Select
-              items={items}
-              value={statusFilter}
-              onValueChange={(value: any) => {
-                setStatusFilter(value)
-                setPage(1)
-              }}
-            >
-              <SelectTrigger className="w-full md:max-w-45">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Filter by Status</SelectLabel>
-                  {items.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+          <Select
+            items={items}
+            value={statusFilter}
+            onValueChange={(value: any) => {
+              setStatusFilter(value)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="w-full md:max-w-45">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Filter by Status</SelectLabel>
+                {items.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="overflow-x-auto">

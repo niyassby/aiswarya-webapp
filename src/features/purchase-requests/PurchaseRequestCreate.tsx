@@ -30,7 +30,11 @@ import {
   ChevronDownIcon,
 } from "lucide-react"
 import { ButtonGroup } from "@/components/ui/button-group"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -77,15 +81,20 @@ export const PurchaseRequestCreate: React.FC = () => {
 
   useEffect(() => {
     if (isEdit && existingPr) {
-      setExpectedDate(existingPr.expected_date ? new Date(existingPr.expected_date) : undefined)
+      setExpectedDate(
+        existingPr.expected_date
+          ? new Date(existingPr.expected_date)
+          : undefined
+      )
       setSupplierInfo(existingPr.supplier_info || "")
-      const mappedItems: PurchaseItemInput[] = existingPr.purchase_request_items.map((item: any) => ({
-        id: item.id,
-        product_name: item.product_name,
-        specs: item.specs || "",
-        quantity: item.quantity,
-        is_custom: true, // make them editable inputs
-      }))
+      const mappedItems: PurchaseItemInput[] =
+        existingPr.purchase_request_items.map((item: any) => ({
+          id: item.id,
+          product_name: item.product_name,
+          specs: item.specs || "",
+          quantity: item.quantity,
+          is_custom: true, // make them editable inputs
+        }))
       setItems(mappedItems)
     }
   }, [isEdit, existingPr])
@@ -113,12 +122,15 @@ export const PurchaseRequestCreate: React.FC = () => {
   // Add catalog item
   const handleAddProduct = (product: any) => {
     const existing = items.find(
-      (item) => !item.is_custom && item.product_name.toLowerCase() === product.name.toLowerCase()
+      (item) =>
+        !item.is_custom &&
+        item.product_name.toLowerCase() === product.name.toLowerCase()
     )
     if (existing) {
       setItems(
         items.map((item) =>
-          !item.is_custom && item.product_name.toLowerCase() === product.name.toLowerCase()
+          !item.is_custom &&
+          item.product_name.toLowerCase() === product.name.toLowerCase()
             ? { ...item, quantity: item.quantity + 1 }
             : item
         )
@@ -181,7 +193,8 @@ export const PurchaseRequestCreate: React.FC = () => {
   // Mutation to Submit Purchase Request
   const submitPrMutation = useMutation({
     mutationFn: async () => {
-      if (items.length === 0) throw new Error("Add at least one item to request")
+      if (items.length === 0)
+        throw new Error("Add at least one item to request")
       const invalidItem = items.find((item) => !item.product_name.trim())
       if (invalidItem) throw new Error("All items must have a product name")
 
@@ -257,7 +270,7 @@ export const PurchaseRequestCreate: React.FC = () => {
         const { error: itemsErr } = await supabase
           .from("purchase_request_items")
           .insert(itemsPayload)
-        
+
         if (itemsErr) throw itemsErr
 
         // 3. Log to audit log
@@ -276,8 +289,14 @@ export const PurchaseRequestCreate: React.FC = () => {
     },
     onSuccess: (prResult) => {
       queryClient.invalidateQueries({ queryKey: ["purchase-requests"] })
-      queryClient.invalidateQueries({ queryKey: ["purchase-request", prResult.id] })
-      toast.success(isEdit ? "Purchase request updated successfully!" : "Purchase request raised successfully!")
+      queryClient.invalidateQueries({
+        queryKey: ["purchase-request", prResult.id],
+      })
+      toast.success(
+        isEdit
+          ? "Purchase request updated successfully!"
+          : "Purchase request raised successfully!"
+      )
       navigate(`/purchase-requests/${prResult.id}`)
     },
     onError: (err: any) => {
@@ -289,7 +308,9 @@ export const PurchaseRequestCreate: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-24">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent font-semibold"></div>
-        <p className="text-sm text-muted-foreground font-semibold">Loading purchase request details for edit...</p>
+        <p className="text-sm font-semibold text-muted-foreground">
+          Loading purchase request details for edit...
+        </p>
       </div>
     )
   }
@@ -297,13 +318,19 @@ export const PurchaseRequestCreate: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between max-md:flex-col max-md:items-start gap-3">
-        <Button onClick={() => navigate("/purchase-requests")} variant="secondary" size="sm">
+      <div className="flex items-center justify-between gap-3 max-md:flex-col max-md:items-start">
+        <Button
+          onClick={() => navigate("/purchase-requests")}
+          variant="secondary"
+          size="sm"
+        >
           <ArrowLeft className="h-4 w-4" />
           Back to Requests
         </Button>
         <h1 className="text-xl font-bold tracking-tight text-slate-800 dark:text-white">
-          {isEdit ? `Edit Purchase Request: ${existingPr?.request_no || ""}` : "Raise Purchase Request"}
+          {isEdit
+            ? `Edit Purchase Request: ${existingPr?.request_no || ""}`
+            : "Raise Purchase Request"}
         </h1>
       </div>
 
@@ -311,23 +338,26 @@ export const PurchaseRequestCreate: React.FC = () => {
         {/* Items List Area */}
         <div className="space-y-6 lg:col-span-2">
           <Card className="py-0">
-            <CardHeader className="flex flex-row max-md:flex-col max-md:items-start gap-4 items-center justify-between border-b p-5">
+            <CardHeader className="flex flex-row items-center justify-between gap-4 border-b p-5 max-md:flex-col max-md:items-start">
               <CardTitle className="flex items-center gap-2 text-base font-bold">
                 <ShoppingBag className="h-5 w-5 text-primary" />
                 Requested items ({items.length})
               </CardTitle>
 
               <div className="flex gap-2">
-                {isMobile ? <PurchaseDrawer setCart={setItems} />
-                :<Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleAddCustomItem}
-                  size="sm"
-                >
-                  <Plus className="h-4 w-4" />
-                  Custom Row
-                </Button>}
+                {isMobile ? (
+                  <PurchaseDrawer setCart={setItems} />
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddCustomItem}
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Custom Row
+                  </Button>
+                )}
               </div>
             </CardHeader>
 
@@ -361,7 +391,7 @@ export const PurchaseRequestCreate: React.FC = () => {
 
                 {/* Catalog Dropdown */}
                 {showProductDropdown && productSearch && (
-                  <div className="absolute right-4 left-4 z-10 mt-1 max-h-56 space-y-1 overflow-y-auto rounded-xl border p-2 shadow-lg bg-popover">
+                  <div className="absolute right-4 left-4 z-10 mt-1 max-h-56 space-y-1 overflow-y-auto rounded-xl border bg-popover p-2 shadow-lg">
                     {filteredProducts.length === 0 ? (
                       <div className="p-3 text-center text-xs text-muted-foreground">
                         No product matches found. Add a custom row instead!
@@ -402,7 +432,8 @@ export const PurchaseRequestCreate: React.FC = () => {
                       Request items list is empty
                     </p>
                     <p className="max-w-xs text-xs text-muted-foreground">
-                      Search catalog items above to add them, or add "Custom Rows" for items not present in the catalog.
+                      Search catalog items above to add them, or add "Custom
+                      Rows" for items not present in the catalog.
                     </p>
                   </div>
                 ) : (
@@ -410,8 +441,12 @@ export const PurchaseRequestCreate: React.FC = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="font-semibold">Item</TableHead>
-                        <TableHead className="font-semibold">Specifications</TableHead>
-                        <TableHead className="w-32 font-semibold">Quantity</TableHead>
+                        <TableHead className="font-semibold">
+                          Specifications
+                        </TableHead>
+                        <TableHead className="w-32 font-semibold">
+                          Quantity
+                        </TableHead>
                         <TableHead className="w-16"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -442,7 +477,11 @@ export const PurchaseRequestCreate: React.FC = () => {
                             <Input
                               value={item.specs}
                               onChange={(e) =>
-                                handleUpdateItem(item.id, "specs", e.target.value)
+                                handleUpdateItem(
+                                  item.id,
+                                  "specs",
+                                  e.target.value
+                                )
                               }
                               placeholder="e.g. Dimensions, Grade"
                               className="w-fit"
@@ -475,7 +514,7 @@ export const PurchaseRequestCreate: React.FC = () => {
                                     Math.max(1, Number(e.target.value))
                                   )
                                 }
-                                className="w-12 text-center p-1"
+                                className="w-12 p-1 text-center"
                               />
                               <Button
                                 size="icon"
@@ -524,20 +563,38 @@ export const PurchaseRequestCreate: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4 p-5">
               <div className="space-y-2">
-                <Label htmlFor="expected_date" className="flex items-center gap-1">
+                <Label
+                  htmlFor="expected_date"
+                  className="flex items-center gap-1"
+                >
                   Expected Delivery Date
                 </Label>
                 <Popover>
-      <PopoverTrigger render={<Button variant={"outline"} data-empty={!expectedDate} className="w-full justify-between text-left font-normal data-[empty=true]:text-muted-foreground">{expectedDate ? format(expectedDate, "PPP") : <span>Pick a date</span>}<ChevronDownIcon data-icon="inline-end" /></Button>} />
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
-          mode="single"
-          selected={expectedDate}
-          onSelect={setExpectedDate}
-          defaultMonth={expectedDate}
-        />
-      </PopoverContent>
-    </Popover>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        variant={"outline"}
+                        data-empty={!expectedDate}
+                        className="w-full justify-between text-left font-normal data-[empty=true]:text-muted-foreground"
+                      >
+                        {expectedDate ? (
+                          format(expectedDate, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <ChevronDownIcon data-icon="inline-end" />
+                      </Button>
+                    }
+                  />
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={expectedDate}
+                      onSelect={setExpectedDate}
+                      defaultMonth={expectedDate}
+                    />
+                  </PopoverContent>
+                </Popover>
                 {/* <Input
                   id="expected_date"
                   type="date"
@@ -548,7 +605,9 @@ export const PurchaseRequestCreate: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="supplier_info">Supplier / Vendor Info (Optional)</Label>
+                <Label htmlFor="supplier_info">
+                  Supplier / Vendor Info (Optional)
+                </Label>
                 <Textarea
                   id="supplier_info"
                   placeholder="Supplier name, contact details, notes..."
@@ -569,8 +628,10 @@ export const PurchaseRequestCreate: React.FC = () => {
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent font-semibold"></div>
                     {isEdit ? "Saving Changes..." : "Submitting..."}
                   </div>
+                ) : isEdit ? (
+                  "Save Request Changes"
                 ) : (
-                  isEdit ? "Save Request Changes" : "Submit Purchase Request"
+                  "Submit Purchase Request"
                 )}
               </Button>
 

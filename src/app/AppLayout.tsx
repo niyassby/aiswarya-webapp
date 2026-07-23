@@ -22,7 +22,6 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { ModeToggle } from "@/components/mode-toggle"
 import { NotificationDropdown } from "@/components/NotificationDropdown"
 
-
 interface NavItem {
   name: string
   path: string
@@ -54,7 +53,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
       icon: Users,
       roles: ["sales_admin", "accounts", "manager", "super_admin"],
     },
-    
+
     {
       name: "Sales Orders",
       path: "/orders",
@@ -105,7 +104,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const scrollToTop = () => {
-      if(scrollRef.current){
+      if (scrollRef.current) {
         scrollRef.current.scrollTop = 0
       }
     }
@@ -131,7 +130,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
         {/* Sidebar Header */}
         <div className="flex h-16 items-center justify-between border-b px-6">
           <div className="flex items-center gap-2">
-            <div className="rounded-xl bg-muted dark:bg-accent-foreground p-1.5">
+            <div className="rounded-xl bg-muted p-1.5 dark:bg-accent-foreground">
               <img className="w-8" src={logo} alt="logo" />
             </div>
             <div className="flex flex-col gap-0.5">
@@ -208,8 +207,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
       </aside>
 
       {isMobile && (
-        <nav className="fixed bottom-0 z-30 w-full border-t bg-background py-4 ">
-          <div className="flex items-center justify-between   px-6">
+        <nav className="fixed bottom-0 z-30 w-full border-t bg-background py-4">
+          <div className="flex items-center justify-between px-6">
             {allowedNavItems.map((item, i) => {
               const isActive = getIsActive(item.path)
               const Icon = item.icon
@@ -217,8 +216,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
                 <Button
                   variant={isActive ? "default" : "ghost"}
                   key={i}
-                  size={'icon-lg'}
-                  className={'size-11'}
+                  size={"icon-lg"}
+                  className={"size-11"}
                   nativeButton={false}
                   render={
                     <Link
@@ -260,13 +259,16 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <ModeToggle/>
+            <ModeToggle />
             <NotificationDropdown />
           </div>
         </header>
 
         {/* Content Page Container */}
-        <main ref={scrollRef} className="flex-1 overflow-y-auto bg-background p-6 md:p-8">
+        <main
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto bg-background p-6 md:p-8"
+        >
           <div className="mx-auto max-w-7xl">{children}</div>
           {isMobile && <div className="h-18"></div>}
         </main>

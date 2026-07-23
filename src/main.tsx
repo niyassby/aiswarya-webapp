@@ -11,12 +11,12 @@ import { HashRouter } from "react-router-dom"
 createRoot(document.getElementById("root")!).render(
   <TanstackProvider>
     <HashRouter>
-    <ThemeProvider>
-      <TooltipProvider>
-        <ToastProvider position="top-right" />
-        <App />
-      </TooltipProvider>
-    </ThemeProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <ToastProvider position="top-right" />
+          <App />
+        </TooltipProvider>
+      </ThemeProvider>
     </HashRouter>
   </TanstackProvider>
 )

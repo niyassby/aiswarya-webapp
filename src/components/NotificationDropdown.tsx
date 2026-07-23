@@ -25,7 +25,6 @@ import {
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
 
-
 function getNotificationIcon(type: string) {
   switch (type) {
     case "order_created":
@@ -90,11 +89,7 @@ export const NotificationDropdown: React.FC = () => {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         render={
-          <Button
-            variant="outline"
-            size="icon"
-            className="relative"
-          >
+          <Button variant="outline" size="icon" className="relative">
             <Bell className="h-5 w-5 text-muted-foreground" />
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 flex size-4.5 animate-pulse items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-background">
@@ -105,7 +100,11 @@ export const NotificationDropdown: React.FC = () => {
         }
       />
 
-      <PopoverContent align="end" alignOffset={-10} className="w-80 p-0 md:w-96">
+      <PopoverContent
+        align="end"
+        alignOffset={-10}
+        className="w-80 p-0 md:w-96"
+      >
         <div className="flex items-center justify-between p-4 pb-2">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <h3 className="text-sm font-semibold">Notifications</h3>
@@ -187,7 +186,7 @@ export const NotificationDropdown: React.FC = () => {
                       <span className="shrink-0 text-[9px] font-medium text-muted-foreground">
                         {/* {formatRelativeTime(notif.created_at)} */}
                         {formatDistanceToNow(new Date(notif.created_at), {
-                          addSuffix: true
+                          addSuffix: true,
                         })}
                       </span>
                     </div>

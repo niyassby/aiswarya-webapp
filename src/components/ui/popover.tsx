@@ -30,8 +30,8 @@ function PopoverContent({
         alignOffset={alignOffset}
         side={side}
         collisionAvoidance={{
-          side: 'none',  
-          fallbackAxisSide: 'none',
+          side: "none",
+          fallbackAxisSide: "none",
         }}
         sideOffset={sideOffset}
         className="isolate z-50"

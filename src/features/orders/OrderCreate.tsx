@@ -109,15 +109,17 @@ export const OrderCreate: React.FC = () => {
   useEffect(() => {
     if (isEdit && existingOrder) {
       setSelectedCustomerId(existingOrder.customer_id)
-      const mappedCart: CheckoutItem[] = existingOrder.order_items.map((item: any) => ({
-        id: item.id,
-        item_name: item.item_name,
-        barcode: item.barcode,
-        specs: item.specs,
-        quantity: item.quantity,
-        unit_price: Number(item.unit_price),
-        is_custom: item.is_custom,
-      }))
+      const mappedCart: CheckoutItem[] = existingOrder.order_items.map(
+        (item: any) => ({
+          id: item.id,
+          item_name: item.item_name,
+          barcode: item.barcode,
+          specs: item.specs,
+          quantity: item.quantity,
+          unit_price: Number(item.unit_price),
+          is_custom: item.is_custom,
+        })
+      )
       setCart(mappedCart)
     } else if (paramCustomerId && customers.length > 0) {
       const exists = customers.some((c) => c.id === paramCustomerId)
@@ -367,7 +369,9 @@ export const OrderCreate: React.FC = () => {
       queryClient.invalidateQueries({
         queryKey: ["customer-orders", selectedCustomerId],
       })
-      toast.success(isEdit ? "Order Updated Successfully!" : "Order Created Successfully!")
+      toast.success(
+        isEdit ? "Order Updated Successfully!" : "Order Created Successfully!"
+      )
       navigate(`/orders/${orderResult.id}`)
     },
     onError: (err: any) => {
@@ -379,7 +383,9 @@ export const OrderCreate: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-24">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent font-semibold"></div>
-        <p className="text-sm text-muted-foreground font-semibold">Loading order details for edit...</p>
+        <p className="text-sm font-semibold text-muted-foreground">
+          Loading order details for edit...
+        </p>
       </div>
     )
   }
@@ -387,13 +393,15 @@ export const OrderCreate: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between max-md:flex-col max-md:items-start gap-3">
+      <div className="flex items-center justify-between gap-3 max-md:flex-col max-md:items-start">
         <Button onClick={() => navigate(-1)} variant="secondary" size="sm">
           <ArrowLeft className="h-4 w-4" />
           Back to Orders
         </Button>
         <h1 className="text-xl font-bold tracking-tight text-slate-800 dark:text-white">
-          {isEdit ? `Edit Sales Order: ${existingOrder?.order_no || ""}` : "Create Sales Order"}
+          {isEdit
+            ? `Edit Sales Order: ${existingOrder?.order_no || ""}`
+            : "Create Sales Order"}
         </h1>
       </div>
 
@@ -401,7 +409,7 @@ export const OrderCreate: React.FC = () => {
         {/* Checkout Items Area */}
         <div className="space-y-6 lg:col-span-2">
           <Card className="py-0">
-            <CardHeader className="flex flex-row max-md:flex-col max-md:items-start gap-4 items-center justify-between border-b p-5">
+            <CardHeader className="flex flex-row items-center justify-between gap-4 border-b p-5 max-md:flex-col max-md:items-start">
               <CardTitle className="flex items-center gap-2 text-base font-bold">
                 <ShoppingBag className="h-5 w-5 text-primary" />
                 Line Items Cart ({cart.length})
@@ -412,29 +420,31 @@ export const OrderCreate: React.FC = () => {
                   type="button"
                   variant="default"
                   onClick={() => setScannerOpen(true)}
-                  size={'sm'}
+                  size={"sm"}
                 >
                   <Barcode className="h-4 w-4" />
                   Camera Scan
                 </Button>
 
-                {isMobile ? <OrderDrawer cart={cart} setCart={setCart} /> :
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleAddCustomItem}
-                  size={'sm'}
-                >
-                  <Plus className="h-4 w-4" />
-                  Custom Row
-                </Button>
-                }
+                {isMobile ? (
+                  <OrderDrawer cart={cart} setCart={setCart} />
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddCustomItem}
+                    size={"sm"}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Custom Row
+                  </Button>
+                )}
               </div>
             </CardHeader>
 
             <CardContent className="p-0">
               {/* Product Catalog Search Dropdown inside card */}
-              <div className="dark:border-slate-850 relative  p-4">
+              <div className="dark:border-slate-850 relative p-4">
                 <div className="relative">
                   <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -462,7 +472,7 @@ export const OrderCreate: React.FC = () => {
 
                 {/* Catalog Search Panel dropdown */}
                 {showProductDropdown && productSearch && (
-                  <div className="absolute right-4 left-4 z-10 mt-1 max-h-56 space-y-1 overflow-y-auto rounded-xl border  p-2 shadow-lg bg-popover">
+                  <div className="absolute right-4 left-4 z-10 mt-1 max-h-56 space-y-1 overflow-y-auto rounded-xl border bg-popover p-2 shadow-lg">
                     {filteredProducts.length === 0 ? (
                       <div className="p-3 text-center text-xs text-muted-foreground">
                         No product matches found. Add a custom row instead!
@@ -513,12 +523,12 @@ export const OrderCreate: React.FC = () => {
                 ) : (
                   <Table>
                     <TableHeader>
-                      <TableRow >
-                        <TableHead className=" font-semibold">
-                          Item
+                      <TableRow>
+                        <TableHead className="font-semibold">Item</TableHead>
+                        <TableHead className="w-[15%] font-semibold">
+                          Barcode
                         </TableHead>
-                        <TableHead className="w-[15%] font-semibold">Barcode</TableHead>
-                        <TableHead className=" font-semibold">
+                        <TableHead className="font-semibold">
                           Description
                         </TableHead>
                         <TableHead className="w-20 font-semibold">
@@ -530,10 +540,8 @@ export const OrderCreate: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {cart.map((item) => (
-                        <TableRow
-                          key={item.id}
-                        >
-                          <TableCell >
+                        <TableRow key={item.id}>
+                          <TableCell>
                             {item.is_custom ? (
                               <div className="space-y-1.5">
                                 <Input
@@ -557,7 +565,7 @@ export const OrderCreate: React.FC = () => {
                               </div>
                             )}
                           </TableCell>
-                          <TableCell >
+                          <TableCell>
                             {item.is_custom ? (
                               <div className="space-y-1.5">
                                 <Input
@@ -581,46 +589,65 @@ export const OrderCreate: React.FC = () => {
                               </div>
                             )}
                           </TableCell>
-                          <TableCell >
+                          <TableCell>
                             <div className="space-y-1.5">
-                                <Input
-                                  value={item.specs || ""}
-                                  onChange={(e) =>
-                                    handleUpdateItem(
-                                      item.id,
-                                      "specs",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="Specs (e.g. Dimensions)"
-                                  className="w-fit"
-                                />
-                              </div>
+                              <Input
+                                value={item.specs || ""}
+                                onChange={(e) =>
+                                  handleUpdateItem(
+                                    item.id,
+                                    "specs",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Specs (e.g. Dimensions)"
+                                className="w-fit"
+                              />
+                            </div>
                           </TableCell>
-                          <TableCell >
+                          <TableCell>
                             <ButtonGroup>
-                              <Button size={'icon'} onClick={()=> handleUpdateItem(item.id, "quantity",  Math.max(1,item.quantity - 1))} variant="outline">
+                              <Button
+                                size={"icon"}
+                                onClick={() =>
+                                  handleUpdateItem(
+                                    item.id,
+                                    "quantity",
+                                    Math.max(1, item.quantity - 1)
+                                  )
+                                }
+                                variant="outline"
+                              >
                                 <Minus />
                               </Button>
                               <Input
-                              type="number"
-                              min={1}
-                              onFocus={(e) => e.target.select()}
-                              value={item.quantity}
-                              onChange={(e) =>
-                                handleUpdateItem(
-                                  item.id,
-                                  "quantity",
-                                  Math.max(1, Number(e.target.value))
-                                )
-                              }
-                              className="min-w-10 px-1 text-center appearance-none"
-                            />
-                              <Button size={'icon'} onClick={()=> handleUpdateItem(item.id, "quantity", item.quantity + 1)} variant="outline">
+                                type="number"
+                                min={1}
+                                onFocus={(e) => e.target.select()}
+                                value={item.quantity}
+                                onChange={(e) =>
+                                  handleUpdateItem(
+                                    item.id,
+                                    "quantity",
+                                    Math.max(1, Number(e.target.value))
+                                  )
+                                }
+                                className="min-w-10 appearance-none px-1 text-center"
+                              />
+                              <Button
+                                size={"icon"}
+                                onClick={() =>
+                                  handleUpdateItem(
+                                    item.id,
+                                    "quantity",
+                                    item.quantity + 1
+                                  )
+                                }
+                                variant="outline"
+                              >
                                 <Plus />
                               </Button>
                             </ButtonGroup>
-                            
                           </TableCell>
                           {/* <TableCell className="p-3 text-right font-bold text-xs">
                             ₹{(item.quantity * item.unit_price).toFixed(2)}
@@ -672,7 +699,7 @@ export const OrderCreate: React.FC = () => {
 
                   {/* Customer search result dropdown panel */}
                   {showCustomerDropdown && (
-                    <div className="absolute right-0 left-0 z-10 mt-1 max-h-56 space-y-1 overflow-y-auto rounded-xl border  bg-popover p-2 shadow-lg ">
+                    <div className="absolute right-0 left-0 z-10 mt-1 max-h-56 space-y-1 overflow-y-auto rounded-xl border bg-popover p-2 shadow-lg">
                       {filteredCustomers.length === 0 ? (
                         <div className="p-3 text-center text-xs text-muted-foreground">
                           No matching customer.{" "}
@@ -695,9 +722,7 @@ export const OrderCreate: React.FC = () => {
                             }}
                             className="flex w-full flex-col rounded-lg px-3 py-2 text-left text-xs hover:bg-secondary"
                           >
-                            <span className="font-semibold">
-                              {c.name}
-                            </span>
+                            <span className="font-semibold">{c.name}</span>
                             {c.phone && (
                               <span className="text-[10px] text-muted-foreground">
                                 {c.phone}
@@ -748,7 +773,7 @@ export const OrderCreate: React.FC = () => {
 
           {/* Pricing Summary Card */}
           <Card className="rounded-2xl pb-0">
-            <CardHeader className="dark:border-slate-850 border-b  pb-3">
+            <CardHeader className="dark:border-slate-850 border-b pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-bold">
                 <DollarSign className="h-4.5 w-4.5 text-primary" />
                 Summary
@@ -757,12 +782,12 @@ export const OrderCreate: React.FC = () => {
             <CardContent className="space-y-4 p-5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Order Type</span>
-                <span className="dark:text-slate-350 rounded border bg-muted px-2 py-0.5 font-semibold ">
+                <span className="dark:text-slate-350 rounded border bg-muted px-2 py-0.5 font-semibold">
                   Enquiry Pipeline
                 </span>
               </div>
 
-              <div className="flex items-center justify-between border-t border-dashed  pt-3 ">
+              <div className="flex items-center justify-between border-t border-dashed pt-3">
                 <span className="text-sm font-semibold">Grand Total</span>
                 <span className="text-lg font-black text-slate-900 dark:text-white">
                   ₹
@@ -787,8 +812,10 @@ export const OrderCreate: React.FC = () => {
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent font-semibold"></div>
                     {isEdit ? "Saving Changes..." : "Placing Order..."}
                   </div>
+                ) : isEdit ? (
+                  "Save Order Changes"
                 ) : (
-                  isEdit ? "Save Order Changes" : "Create Enquiry Order"
+                  "Create Enquiry Order"
                 )}
               </Button>
 

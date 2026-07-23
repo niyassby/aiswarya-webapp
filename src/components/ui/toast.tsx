@@ -1,9 +1,6 @@
 "use client"
 import * as React from "react"
-import {
-  Toast,
-  type ToastManagerUpdateOptions,
-} from "@base-ui/react/toast"
+import { Toast, type ToastManagerUpdateOptions } from "@base-ui/react/toast"
 import { cva } from "class-variance-authority"
 import {
   CheckCircle2,
@@ -34,15 +31,15 @@ const toastRootVariants = cva(
       variant: {
         default:
           "border-neutral-950 bg-white text-neutral-950 shadow-[0.25rem_0.25rem_0] shadow-black/12 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50 dark:shadow-none",
-          success:
+        success:
           "border-emerald-600 bg-emerald-50 text-emerald-950 shadow-[0.25rem_0.25rem_0] shadow-emerald-600/20 dark:border-emerald-500/30 dark:bg-emerald-950/20 dark:text-emerald-50 dark:shadow-none",
-          error:
+        error:
           "border-red-600 bg-red-50 text-red-950 shadow-[0.25rem_0.25rem_0] shadow-red-600/20 dark:border-red-500/30 dark:bg-red-950/20 dark:text-red-50 dark:shadow-none",
-          warning:
+        warning:
           "border-amber-600 bg-amber-50 text-amber-950 shadow-[0.25rem_0.25rem_0] shadow-amber-600/20 dark:border-amber-500/30 dark:bg-amber-950/20 dark:text-amber-50 dark:shadow-none",
-          info: "border-sky-600 bg-sky-50 text-sky-950 shadow-[0.25rem_0.25rem_0] shadow-sky-600/20 dark:border-sky-500/30 dark:bg-sky-950/20 dark:text-sky-50 dark:shadow-none",
-          loading:
-            "border-neutral-950 bg-white text-neutral-950 shadow-[0.25rem_0.25rem_0] shadow-black/12 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50 dark:shadow-none",
+        info: "border-sky-600 bg-sky-50 text-sky-950 shadow-[0.25rem_0.25rem_0] shadow-sky-600/20 dark:border-sky-500/30 dark:bg-sky-950/20 dark:text-sky-50 dark:shadow-none",
+        loading:
+          "border-neutral-950 bg-white text-neutral-950 shadow-[0.25rem_0.25rem_0] shadow-black/12 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50 dark:shadow-none",
       },
     },
     defaultVariants: {
@@ -142,8 +139,13 @@ export const toastManager = Toast.createToastManager<CustomToastData>()
 /* -------------------------------------------------------------------------- */
 
 function mapPromiseState<T>(
-  stateOption: | string | (Omit<ToastOptions, "title"> & { title?: React.ReactNode })
-    | ((  val: T ) => | string | (Omit<ToastOptions, "title"> & { title?: React.ReactNode })),
+  stateOption:
+    | string
+    | (Omit<ToastOptions, "title"> & { title?: React.ReactNode })
+    | ((
+        val: T
+      ) =>
+        string | (Omit<ToastOptions, "title"> & { title?: React.ReactNode })),
   defaultVariant: ToastVariant,
   val?: T
 ): ToastManagerUpdateOptions<CustomToastData> {
@@ -218,11 +220,20 @@ export const toast = Object.assign(
     loading: (
       title: React.ReactNode,
       options?: Omit<ToastOptions, "title" | "variant">
-    ) => toast(title, { variant: "loading", duration: options?.duration ?? Infinity, ...options }),
+    ) =>
+      toast(title, {
+        variant: "loading",
+        duration: options?.duration ?? Infinity,
+        ...options,
+      }),
 
     dismiss: (id: string) => toastManager.close(id),
 
-    update: (id: string, title: React.ReactNode, options?: Omit<ToastOptions, "title">) =>
+    update: (
+      id: string,
+      title: React.ReactNode,
+      options?: Omit<ToastOptions, "title">
+    ) =>
       toastManager.update(id, {
         title,
         description: options?.description,
@@ -240,8 +251,7 @@ export const toast = Object.assign(
       promiseValue: Promise<Value>,
       options: {
         loading:
-          | string
-          | (Omit<ToastOptions, "title"> & { title?: React.ReactNode })
+          string | (Omit<ToastOptions, "title"> & { title?: React.ReactNode })
         success:
           | string
           | (Omit<ToastOptions, "title"> & { title?: React.ReactNode })
@@ -281,7 +291,7 @@ export default function ToastProvider({
   return (
     <Toast.Provider toastManager={toastManager}>
       <Toast.Portal>
-        <Toast.Viewport 
+        <Toast.Viewport
           className={toastViewportVariants({
             position,
           })}
@@ -304,12 +314,13 @@ type ToastIconProps = {
   variant: ToastVariant
 }
 
-const ToastIcon = React.memo(function ToastIcon({ icon, variant }: ToastIconProps) {
+const ToastIcon = React.memo(function ToastIcon({
+  icon,
+  variant,
+}: ToastIconProps) {
   if (icon) {
     return (
-      <div className="flex shrink-0 items-center justify-center">
-        {icon}
-      </div>
+      <div className="flex shrink-0 items-center justify-center">{icon}</div>
     )
   }
 
@@ -327,7 +338,9 @@ const ToastIcon = React.memo(function ToastIcon({ icon, variant }: ToastIconProp
       return <Info className="h-5 w-5 shrink-0 text-sky-500" />
 
     case TOAST_VARIANTS.LOADING:
-      return <LoaderCircle className="h-5 w-5 shrink-0 animate-spin text-neutral-500" />
+      return (
+        <LoaderCircle className="h-5 w-5 shrink-0 animate-spin text-neutral-500" />
+      )
 
     default:
       return null
@@ -342,13 +355,16 @@ function ToastList({ position }: { position?: ToastPosition }) {
   const { toasts, close } = Toast.useToastManager<CustomToastData>()
 
   return toasts.map((toast) => {
-    const activeVariant = (toast.data?.variant || toast.type || "default") as ToastVariant
+    const activeVariant = (toast.data?.variant ||
+      toast.type ||
+      "default") as ToastVariant
 
-    let pulseClassName: string | null = null;
+    let pulseClassName: string | null = null
 
     // New toasts start with `updateKey: 0`, so the first add skips the replay pulse.
     if (toast.updateKey) {
-      pulseClassName = toast.updateKey % 2 === 0 ? "pulse-animation1" : "pulse-animation2";
+      pulseClassName =
+        toast.updateKey % 2 === 0 ? "pulse-animation1" : "pulse-animation2"
     }
 
     const className = toast?.data?.className + " " + pulseClassName
@@ -361,42 +377,38 @@ function ToastList({ position }: { position?: ToastPosition }) {
         className={toastRootVariants({
           position: position,
           variant: activeVariant,
-          className
+          className,
         })}
       >
         <Toast.Content className="flex h-full items-center gap-4 overflow-hidden p-3 transition-opacity duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] data-behind:opacity-0 data-expanded:opacity-100">
-           <ToastIcon
-            icon={toast.data?.icon}
-            variant={activeVariant}
-          />
+          <ToastIcon icon={toast.data?.icon} variant={activeVariant} />
 
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <Toast.Title className="text-sm font-bold" />
             <Toast.Description className="text-xs opacity-90" />
           </div>
           <div className="flex flex-col gap-1">
+            {toast.data?.action && (
+              <Toast.Action
+                onClick={() => {
+                  close(toast.id)
+                  toast.data?.action?.onClick?.()
+                }}
+                className={toastButtonVariants({
+                  variant: activeVariant,
+                })}
+              >
+                {toast.data.action.label}
+              </Toast.Action>
+            )}
 
-          {toast.data?.action && (
-            <Toast.Action
-              onClick={() => {
-                close(toast.id)
-                toast.data?.action?.onClick?.()
-              }}
+            <Toast.Close
               className={toastButtonVariants({
                 variant: activeVariant,
               })}
             >
-              {toast.data.action.label}
-            </Toast.Action>
-          )}
-
-          <Toast.Close
-            className={toastButtonVariants({
-              variant: activeVariant
-            })}
-          >
-            Dismiss
-          </Toast.Close>
+              Dismiss
+            </Toast.Close>
           </div>
         </Toast.Content>
       </Toast.Root>

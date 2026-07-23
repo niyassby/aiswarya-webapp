@@ -29,21 +29,23 @@ function StaffTab() {
   const [roleEditorOpen, setRoleEditorOpen] = useState(false)
   const [editingStaffMember, setEditingStaffMember] = useState<any | null>(null)
   const [staffEditRoles, setStaffEditRoles] = useState<string[]>([])
-  
-  const { data: staff = [], isLoading: staffLoading} = useQuery({
+
+  const { data: staff = [], isLoading: staffLoading } = useQuery({
     queryKey: ["admin-staff"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select(`
+        .select(
+          `
           *,
           user_roles!user_roles_user_id_fkey (
             *
           )
-        `)
+        `
+        )
         .order("full_name")
       if (error) throw error
-      
+
       return data || []
     },
   })
@@ -146,7 +148,7 @@ function StaffTab() {
   })
   return (
     <div>
-      <Card >
+      <Card>
         <div className="overflow-x-auto">
           {staffLoading ? (
             <div className="py-12 text-center text-xs text-muted-foreground">

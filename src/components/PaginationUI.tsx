@@ -37,27 +37,27 @@ function PaginationUI({
   }
   return (
     <div className="flex flex-col gap-2 border-t p-4 md:flex-row md:items-center md:justify-between">
-      <div className="flex  items-center gap-2">
-          <Select
-            defaultValue={pageSize}
-            onValueChange={(e) => {
-              setPageSize(Number(e))
-              setPage(1)
-            }}
-          >
-            <SelectTrigger size="sm" className="w-20">
-              <SelectValue placeholder="Per page" />
-            </SelectTrigger>
-            <SelectContent className={'min-w-20'}>
-              <SelectGroup>
-                {items.map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {item}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+      <div className="flex items-center gap-2">
+        <Select
+          defaultValue={pageSize}
+          onValueChange={(e) => {
+            setPageSize(Number(e))
+            setPage(1)
+          }}
+        >
+          <SelectTrigger size="sm" className="w-20">
+            <SelectValue placeholder="Per page" />
+          </SelectTrigger>
+          <SelectContent className={"min-w-20"}>
+            <SelectGroup>
+              {items.map((item) => (
+                <SelectItem key={item} value={item}>
+                  {item}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
         <span className="text-xs text-muted-foreground">
           {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCount)}{" "}
           of <span className="font-medium text-foreground">{totalCount}</span>{" "}
@@ -82,7 +82,7 @@ function PaginationUI({
             max={totalPages}
             value={page}
             onChange={handleGoToPage}
-            onFocus={(e)=>e.target.select()}
+            onFocus={(e) => e.target.select()}
           />
           <Button
             size={"sm"}
@@ -90,7 +90,8 @@ function PaginationUI({
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
           >
-            Next<ChevronRight /> 
+            Next
+            <ChevronRight />
           </Button>
         </div>
       </div>

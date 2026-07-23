@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Search, Plus, Barcode, Edit, Package, AlertCircle} from "lucide-react"
+import { Search, Plus, Barcode, Edit, Package, AlertCircle } from "lucide-react"
 import PaginationUI from "@/components/PaginationUI"
 
 // Form Schema
@@ -52,9 +52,8 @@ export const ProductList: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<any | null>(null)
   const [scannerOpen, setScannerOpen] = useState(false)
 
-    const [page, setPage] = useState(1)
-    const [pageSize, setPageSize] = useState(10)
-
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const canModify = isSalesAdmin || isManager || isSuperAdmin
 
@@ -77,7 +76,7 @@ export const ProductList: React.FC = () => {
   })
 
   const [debouncedSearch, setDebouncedSearch] = useState(searchTerm)
-  
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm)
@@ -96,7 +95,9 @@ export const ProductList: React.FC = () => {
         .order("name", { ascending: true })
 
       if (debouncedSearch) {
-        query = query.or(`name.ilike.%${debouncedSearch}%,barcode.ilike.%${debouncedSearch}%,specs.ilike.%${debouncedSearch}%`)
+        query = query.or(
+          `name.ilike.%${debouncedSearch}%,barcode.ilike.%${debouncedSearch}%,specs.ilike.%${debouncedSearch}%`
+        )
       }
 
       const from = (page - 1) * pageSize
@@ -157,10 +158,6 @@ export const ProductList: React.FC = () => {
     saveProductMutation.mutate(values)
   }
 
-
-
-  
-
   const handleOpenAdd = () => {
     setEditingProduct(null)
     reset({
@@ -200,7 +197,7 @@ export const ProductList: React.FC = () => {
       {/* Header and Add button */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight ">
+          <h1 className="text-3xl font-bold tracking-tight">
             Products Catalog
           </h1>
           <p className="text-muted-foreground">
@@ -210,12 +207,8 @@ export const ProductList: React.FC = () => {
 
         {canModify && (
           <div className="flex gap-2">
-            
-            
             {/* <BulkUpload/> */}
-            <Button
-              onClick={handleOpenAdd}
-            >
+            <Button onClick={handleOpenAdd}>
               <Plus className="h-4 w-4" />
               Add Product
             </Button>
@@ -225,7 +218,7 @@ export const ProductList: React.FC = () => {
 
       {/* Catalog Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="flex items-center gap-4 rounded-2xl border bg-card p-5 shadow-sm ">
+        <div className="flex items-center gap-4 rounded-2xl border bg-card p-5 shadow-sm">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 text-violet-500 dark:bg-violet-950/30">
             <Package className="h-6 w-6" />
           </div>
@@ -237,7 +230,7 @@ export const ProductList: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 rounded-2xl border bg-card p-5 shadow-sm ">
+        <div className="flex items-center gap-4 rounded-2xl border bg-card p-5 shadow-sm">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500 dark:bg-amber-950/30">
             <AlertCircle className="h-6 w-6" />
           </div>
@@ -378,7 +371,7 @@ export const ProductList: React.FC = () => {
       />
 
       {/* Catalog Table */}
-      <div className="overflow-hidden rounded-2xl border  bg-card ">
+      <div className="overflow-hidden rounded-2xl border bg-card">
         <div className="flex items-center border-b p-5">
           <div className="relative w-full max-w-sm">
             <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -386,7 +379,7 @@ export const ProductList: React.FC = () => {
               placeholder="Search catalog by name, barcode..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className=" pl-10"
+              className="pl-10"
             />
           </div>
         </div>
@@ -406,7 +399,7 @@ export const ProductList: React.FC = () => {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow >
+                <TableRow>
                   <TableHead className="font-semibold">Barcode</TableHead>
                   <TableHead className="font-semibold">Product Name</TableHead>
                   <TableHead className="font-semibold">
@@ -421,10 +414,8 @@ export const ProductList: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {products.map((product) => (
-                  <TableRow
-                    key={product.id}
-                  >
-                    <TableCell className="font-mono text-xs font-semibold ">
+                  <TableRow key={product.id}>
+                    <TableCell className="font-mono text-xs font-semibold">
                       {product.barcode ? (
                         <div className="flex items-center gap-1">
                           <Barcode className="h-3.5 w-3.5 opacity-65" />
@@ -436,7 +427,7 @@ export const ProductList: React.FC = () => {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="font-semibold ">
+                    <TableCell className="font-semibold">
                       {product.name}
                     </TableCell>
                     <TableCell
@@ -468,7 +459,7 @@ export const ProductList: React.FC = () => {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleOpenEdit(product)}
-                          className="h-8 w-8 rounded-lg "
+                          className="h-8 w-8 rounded-lg"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -479,15 +470,15 @@ export const ProductList: React.FC = () => {
               </TableBody>
             </Table>
           )}
-{totalCount > 1 && (
-          <PaginationUI
-            page={page}
-            setPage={setPage}
-            totalCount={totalCount}
-            pageSize={pageSize}
-            setPageSize={setPageSize}
-          />
-        )}
+          {totalCount > 1 && (
+            <PaginationUI
+              page={page}
+              setPage={setPage}
+              totalCount={totalCount}
+              pageSize={pageSize}
+              setPageSize={setPageSize}
+            />
+          )}
         </div>
       </div>
     </div>

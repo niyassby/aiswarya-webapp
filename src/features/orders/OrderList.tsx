@@ -63,7 +63,13 @@ export const OrderList: React.FC = () => {
 
   // Metrics Query
   const { data: orderMetrics = [] } = useQuery({
-    queryKey: ["orders-metrics", user?.id, operatorFilter, statusFilter, daysFilter],
+    queryKey: [
+      "orders-metrics",
+      user?.id,
+      operatorFilter,
+      statusFilter,
+      daysFilter,
+    ],
     queryFn: async () => {
       if (!user) return []
       let query = supabase.from("orders").select("id, status")
@@ -281,7 +287,7 @@ export const OrderList: React.FC = () => {
               className="pl-10"
             />
           </div>
-          <div className="flex md:items-center gap-2 max-md:flex-col">
+          <div className="flex gap-2 max-md:flex-col md:items-center">
             <div className="grid w-full max-w-xl grid-cols-2 gap-2 lg:grid-cols-4">
               <Select
                 defaultValue={items[0]}

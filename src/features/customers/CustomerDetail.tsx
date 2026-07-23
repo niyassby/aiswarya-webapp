@@ -62,7 +62,6 @@ export const CustomerDetail: React.FC = () => {
   const { user } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
 
-
   // 1. Fetch Customer Data
   const { data: customer, isLoading: customerLoading } = useQuery({
     queryKey: ["customer", id],
@@ -203,91 +202,91 @@ export const CustomerDetail: React.FC = () => {
         </Button>
 
         <div className="flex gap-2">
-            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-              <DialogTrigger
-                render={
-                  <Button variant="outline">
-                    <Edit2 className="h-3.5 w-3.5" />
-                    Edit Profile
-                  </Button>
-                }
-              />
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>Edit Customer Profile</DialogTitle>
-                </DialogHeader>
-                <form
-                  onSubmit={handleSubmit(onEditSubmit)}
-                  className="space-y-4 pt-4"
-                >
+          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+            <DialogTrigger
+              render={
+                <Button variant="outline">
+                  <Edit2 className="h-3.5 w-3.5" />
+                  Edit Profile
+                </Button>
+              }
+            />
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Edit Customer Profile</DialogTitle>
+              </DialogHeader>
+              <form
+                onSubmit={handleSubmit(onEditSubmit)}
+                className="space-y-4 pt-4"
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name *</Label>
+                  <Input id="name" {...register("name")} />
+                  {errors.name && (
+                    <p className="text-xs text-rose-500">
+                      {errors.name.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name *</Label>
-                    <Input id="name" {...register("name")} />
-                    {errors.name && (
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input id="phone" {...register("phone")} />
+                    {errors.phone && (
                       <p className="text-xs text-rose-500">
-                        {errors.name.message}
+                        {errors.phone.message}
                       </p>
                     )}
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input id="phone" {...register("phone")} />
-                      {errors.phone && (
-                        <p className="text-xs text-rose-500">
-                          {errors.phone.message}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email Address</Label>
-                      <Input id="email" type="email" {...register("email")} />
-                      {errors.email && (
-                        <p className="text-xs text-rose-500">
-                          {errors.email.message}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Textarea id="address" {...register("address")} rows={2} />
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input id="email" type="email" {...register("email")} />
+                    {errors.email && (
+                      <p className="text-xs text-rose-500">
+                        {errors.email.message}
+                      </p>
+                    )}
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="notes">Internal Notes</Label>
-                    <Textarea id="notes" {...register("notes")} rows={2} />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea id="address" {...register("address")} rows={2} />
+                </div>
 
-                  <DialogFooter className="pt-4">
-                    <DialogClose
-                      render={
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="rounded-xl"
-                        >
-                          Cancel
-                        </Button>
-                      }
-                    />
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="rounded-xl"
-                    >
-                      {isSubmitting ? "Saving..." : "Save Changes"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Internal Notes</Label>
+                  <Textarea id="notes" {...register("notes")} rows={2} />
+                </div>
+
+                <DialogFooter className="pt-4">
+                  <DialogClose
+                    render={
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="rounded-xl"
+                      >
+                        Cancel
+                      </Button>
+                    }
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="rounded-xl"
+                  >
+                    {isSubmitting ? "Saving..." : "Save Changes"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
 
           {isSalesAdmin && (
             <Button
-            nativeButton={false}
+              nativeButton={false}
               render={<Link to={`/orders/create?customer_id=${customer.id}`} />}
             >
               <Plus className="h-4 w-4" />
@@ -346,7 +345,7 @@ export const CustomerDetail: React.FC = () => {
                     </div>
                   </div>
                 )}
-                
+
                 {customer.address && (
                   <div className="flex items-start gap-2.5 text-sm">
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />

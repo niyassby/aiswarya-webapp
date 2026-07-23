@@ -172,7 +172,7 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Welcome banner */}
-      <div className="relative flex flex-col gap-4 overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 to-indigo-950 p-6 text-background shadow-xl md:flex-row md:items-center md:justify-between md:p-8 ">
+      <div className="relative flex flex-col gap-4 overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 to-indigo-950 p-6 text-background shadow-xl md:flex-row md:items-center md:justify-between md:p-8">
         <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
         <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
 
@@ -180,7 +180,7 @@ export const Dashboard: React.FC = () => {
           <h1 className="text-2xl font-black tracking-tight md:text-3xl">
             Welcome back, {profile?.full_name || "Operator"}!
           </h1>
-          <p className=" max-w-xl text-xs font-light md:text-sm">
+          <p className="max-w-xl text-xs font-light md:text-sm">
             Aiswarya Group Operations Control Center. Real-time updates and
             sales flow monitoring are active.
           </p>
@@ -200,46 +200,45 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Global Time Filter */}
-      {isSuperAdmin &&
-        isManager && (
-          <div className="flex items-center justify-between gap-2 max-md:flex-col">
-            <h2 className="text-sm font-bold tracking-wider  uppercase">
-              Metrics Overview
-            </h2>
-            <div className="flex rounded-xl bg-muted p-1">
-              <button
-                onClick={() => setTimeFilter("all")}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  timeFilter === "all"
-                    ? "shadow-sm bg-foreground text-background"
-                    : "text-muted-foreground"
-                }`}
-              >
-                All Time
-              </button>
-              <button
-                onClick={() => setTimeFilter("month")}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  timeFilter === "month"
-                    ? "shadow-sm bg-foreground text-background"
-                    : "text-muted-foreground"
-                }`}
-              >
-                This Month
-              </button>
-              <button
-                onClick={() => setTimeFilter("week")}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  timeFilter === "week"
-                    ? "shadow-sm bg-foreground text-background"
-                    : "text-muted-foreground"
-                }`}
-              >
-                This Week
-              </button>
-            </div>
+      {isSuperAdmin && isManager && (
+        <div className="flex items-center justify-between gap-2 max-md:flex-col">
+          <h2 className="text-sm font-bold tracking-wider uppercase">
+            Metrics Overview
+          </h2>
+          <div className="flex rounded-xl bg-muted p-1">
+            <button
+              onClick={() => setTimeFilter("all")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                timeFilter === "all"
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground"
+              }`}
+            >
+              All Time
+            </button>
+            <button
+              onClick={() => setTimeFilter("month")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                timeFilter === "month"
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground"
+              }`}
+            >
+              This Month
+            </button>
+            <button
+              onClick={() => setTimeFilter("week")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                timeFilter === "week"
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground"
+              }`}
+            >
+              This Week
+            </button>
           </div>
-        )}
+        </div>
+      )}
 
       {/* RENDER VIEW BASED ON PRIMARY CAPABILITY */}
 

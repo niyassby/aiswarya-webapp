@@ -17,7 +17,6 @@ import { ButtonGroup } from "@/components/ui/button-group"
 import { Minus, Plus } from "lucide-react"
 import type { PurchaseItemInput } from "./PurchaseRequestCreate"
 
-
 const initialItem: PurchaseItemInput = {
   id: "",
   product_name: "",
@@ -27,7 +26,7 @@ const initialItem: PurchaseItemInput = {
 }
 
 export function PurchaseDrawer({
-  setCart
+  setCart,
 }: {
   setCart: React.Dispatch<React.SetStateAction<PurchaseItemInput[]>>
 }) {
@@ -38,9 +37,7 @@ export function PurchaseDrawer({
     if (open) {
       setItem({
         ...initialItem,
-        id: `custom-${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2, 6)}`,
+        id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       })
     }
   }, [open])
@@ -89,9 +86,7 @@ export function PurchaseDrawer({
             <Input
               value={item.product_name}
               placeholder="Item Name"
-              onChange={(e) =>
-                handleChange("product_name", e.target.value)
-              }
+              onChange={(e) => handleChange("product_name", e.target.value)}
             />
           </div>
 
@@ -111,9 +106,7 @@ export function PurchaseDrawer({
             <Input
               value={item.specs || ""}
               placeholder="Specifications"
-              onChange={(e) =>
-                handleChange("specs", e.target.value)
-              }
+              onChange={(e) => handleChange("specs", e.target.value)}
             />
           </div>
 
@@ -124,10 +117,7 @@ export function PurchaseDrawer({
               <Button
                 variant="outline"
                 onClick={() =>
-                  handleChange(
-                    "quantity",
-                    Math.max(1, item.quantity - 1)
-                  )
+                  handleChange("quantity", Math.max(1, item.quantity - 1))
                 }
               >
                 <Minus />
@@ -149,9 +139,7 @@ export function PurchaseDrawer({
 
               <Button
                 variant="outline"
-                onClick={() =>
-                  handleChange("quantity", item.quantity + 1)
-                }
+                onClick={() => handleChange("quantity", item.quantity + 1)}
               >
                 <Plus />
               </Button>
@@ -160,9 +148,7 @@ export function PurchaseDrawer({
         </div>
 
         <DrawerFooter>
-          <Button onClick={handleSubmit}>
-            Add Item
-          </Button>
+          <Button onClick={handleSubmit}>Add Item</Button>
 
           <DrawerClose
             render={<Button variant="outline">Cancel</Button>}

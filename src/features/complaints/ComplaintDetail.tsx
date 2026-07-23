@@ -354,7 +354,7 @@ export const ComplaintDetail: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between max-md:flex-col max-md:items-start gap-3">
+      <div className="flex items-center justify-between gap-3 max-md:flex-col max-md:items-start">
         <Button
           render={<Link to="/complaints" />}
           variant="secondary"
@@ -373,8 +373,8 @@ export const ComplaintDetail: React.FC = () => {
         {/* Thread and details */}
         <div className="space-y-6 lg:col-span-2">
           {/* Main Case details Card */}
-          <Card >
-            <CardHeader className="flex flex-row items-center justify-between border-b p-5 ">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between border-b p-5">
               <div>
                 <span className="block font-mono text-[10px] font-bold text-muted-foreground uppercase">
                   {complaint.complaint_no}
@@ -390,7 +390,7 @@ export const ComplaintDetail: React.FC = () => {
               />
             </CardHeader>
             <CardContent className="space-y-4 p-6">
-              <div className="rounded-xl border p-4 text-xs leading-relaxed ">
+              <div className="rounded-xl border p-4 text-xs leading-relaxed">
                 <span className="mb-1 block text-[10px] font-bold text-muted-foreground uppercase">
                   Incident description
                 </span>
@@ -451,7 +451,7 @@ export const ComplaintDetail: React.FC = () => {
                         {new Date(comment.created_at).toLocaleString()}
                       </span>
                     </div>
-                    <div className="rounded-xl border p-2 bg-muted">
+                    <div className="rounded-xl border bg-muted p-2">
                       {renderCommentContent(comment.comment)}
                     </div>
                   </div>
@@ -497,12 +497,12 @@ export const ComplaintDetail: React.FC = () => {
                   if (e.key === "Enter") handlePostComment()
                 }}
                 disabled={uploadingFile || postCommentMutation.isPending}
-                className=" flex-1 text-xs "
+                className="flex-1 text-xs"
               />
 
               <Button
                 onClick={handlePostComment}
-                size={'icon'}
+                size={"icon"}
                 disabled={
                   !commentText.trim() ||
                   uploadingFile ||
@@ -518,7 +518,7 @@ export const ComplaintDetail: React.FC = () => {
         {/* Sidebar Info & Controls */}
         <div className="space-y-6">
           {/* Customer & Order Linked Card */}
-          <Card >
+          <Card>
             <CardContent className="space-y-4 p-5 text-xs">
               <div>
                 <span className="block text-[10px] font-bold text-muted-foreground uppercase">
@@ -556,8 +556,8 @@ export const ComplaintDetail: React.FC = () => {
 
           {/* Ticket Field Controls form */}
           {canManage && (
-            <Card >
-              <CardHeader className="border-b  pb-3">
+            <Card>
+              <CardHeader className="border-b pb-3">
                 <CardTitle className="flex items-center gap-2 text-sm font-bold">
                   <Clock className="h-4.5 w-4.5 text-primary" />
                   Ticket settings control
@@ -575,7 +575,7 @@ export const ComplaintDetail: React.FC = () => {
                     onChange={(e) =>
                       updateComplaintMutation.mutate({ status: e.target.value })
                     }
-                    className="w-full rounded-xl border px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary bg-muted"
+                    className="w-full rounded-xl border bg-muted px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="open">Open</option>
                     <option value="assigned">Assigned</option>
@@ -598,7 +598,7 @@ export const ComplaintDetail: React.FC = () => {
                         priority: e.target.value,
                       })
                     }
-                    className="w-full rounded-xl border px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary bg-muted"
+                    className="w-full rounded-xl border bg-muted px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -623,7 +623,7 @@ export const ComplaintDetail: React.FC = () => {
                           status: e.target.value === "" ? "open" : "assigned",
                         })
                       }
-                      className="w-full rounded-xl border px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary bg-muted"
+                      className="w-full rounded-xl border bg-muted px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary"
                     >
                       <option value="">-- Unassigned --</option>
                       {staffList.map((staff) => (

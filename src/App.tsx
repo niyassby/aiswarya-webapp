@@ -1,25 +1,25 @@
-import { Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/features/auth/useAuth";
-import RoleGuard from "@/components/RoleGuard";
-import AppLayout from "@/app/AppLayout";
+import { Routes, Route, Navigate } from "react-router-dom"
+import { AuthProvider } from "@/features/auth/useAuth"
+import RoleGuard from "@/components/RoleGuard"
+import AppLayout from "@/app/AppLayout"
 
 // Pages
-import Login from "@/features/auth/Login";
-import Unauthorized from "@/features/auth/Unauthorized";
-import Dashboard from "@/features/dashboard/Dashboard";
-import CustomerList from "@/features/customers/CustomerList";
-import CustomerDetail from "@/features/customers/CustomerDetail";
-import ProductList from "@/features/products/ProductList";
-import OrderList from "@/features/orders/OrderList";
-import OrderCreate from "@/features/orders/OrderCreate";
-import OrderDetail from "@/features/orders/OrderDetail";
-import PurchaseRequestList from "@/features/purchase-requests/PurchaseRequestList";
-import PurchaseRequestCreate from "@/features/purchase-requests/PurchaseRequestCreate";
-import PurchaseRequestDetail from "@/features/purchase-requests/PurchaseRequestDetail";
-import ComplaintList from "@/features/complaints/ComplaintList";
-import ComplaintDetail from "@/features/complaints/ComplaintDetail";
-import AdminPanel from "@/features/users/AdminPanel";
-import AcceptInvite from "./features/auth/AcceptInvite";
+import Login from "@/features/auth/Login"
+import Unauthorized from "@/features/auth/Unauthorized"
+import Dashboard from "@/features/dashboard/Dashboard"
+import CustomerList from "@/features/customers/CustomerList"
+import CustomerDetail from "@/features/customers/CustomerDetail"
+import ProductList from "@/features/products/ProductList"
+import OrderList from "@/features/orders/OrderList"
+import OrderCreate from "@/features/orders/OrderCreate"
+import OrderDetail from "@/features/orders/OrderDetail"
+import PurchaseRequestList from "@/features/purchase-requests/PurchaseRequestList"
+import PurchaseRequestCreate from "@/features/purchase-requests/PurchaseRequestCreate"
+import PurchaseRequestDetail from "@/features/purchase-requests/PurchaseRequestDetail"
+import ComplaintList from "@/features/complaints/ComplaintList"
+import ComplaintDetail from "@/features/complaints/ComplaintDetail"
+import AdminPanel from "@/features/users/AdminPanel"
+import AcceptInvite from "./features/auth/AcceptInvite"
 
 export function App() {
   return (
@@ -34,7 +34,9 @@ export function App() {
         <Route
           path="/"
           element={
-            <RoleGuard allow={["sales_admin", "accounts", "manager", "super_admin"]}>
+            <RoleGuard
+              allow={["sales_admin", "accounts", "manager", "super_admin"]}
+            >
               <AppLayout>
                 <Dashboard />
               </AppLayout>
@@ -44,7 +46,9 @@ export function App() {
         <Route
           path="/customers"
           element={
-            <RoleGuard allow={["sales_admin", "accounts", "manager", "super_admin"]}>
+            <RoleGuard
+              allow={["sales_admin", "accounts", "manager", "super_admin"]}
+            >
               <AppLayout>
                 <CustomerList />
               </AppLayout>
@@ -54,7 +58,9 @@ export function App() {
         <Route
           path="/customers/:id"
           element={
-            <RoleGuard allow={["sales_admin", "accounts", "manager", "super_admin"]}>
+            <RoleGuard
+              allow={["sales_admin", "accounts", "manager", "super_admin"]}
+            >
               <AppLayout>
                 <CustomerDetail />
               </AppLayout>
@@ -64,7 +70,9 @@ export function App() {
         <Route
           path="/products"
           element={
-            <RoleGuard allow={["sales_admin", "accounts", "manager", "super_admin"]}>
+            <RoleGuard
+              allow={["sales_admin", "accounts", "manager", "super_admin"]}
+            >
               <AppLayout>
                 <ProductList />
               </AppLayout>
@@ -74,7 +82,9 @@ export function App() {
         <Route
           path="/orders"
           element={
-            <RoleGuard allow={["sales_admin", "accounts", "manager", "super_admin"]}>
+            <RoleGuard
+              allow={["sales_admin", "accounts", "manager", "super_admin"]}
+            >
               <AppLayout>
                 <OrderList />
               </AppLayout>
@@ -104,7 +114,9 @@ export function App() {
         <Route
           path="/orders/:id"
           element={
-            <RoleGuard allow={["sales_admin", "accounts", "manager", "super_admin"]}>
+            <RoleGuard
+              allow={["sales_admin", "accounts", "manager", "super_admin"]}
+            >
               <AppLayout>
                 <OrderDetail />
               </AppLayout>
@@ -154,7 +166,9 @@ export function App() {
         <Route
           path="/complaints"
           element={
-            <RoleGuard allow={["sales_admin", "accounts", "manager", "super_admin"]}>
+            <RoleGuard
+              allow={["sales_admin", "accounts", "manager", "super_admin"]}
+            >
               <AppLayout>
                 <ComplaintList />
               </AppLayout>
@@ -164,7 +178,9 @@ export function App() {
         <Route
           path="/complaints/:id"
           element={
-            <RoleGuard allow={["sales_admin", "accounts", "manager", "super_admin"]}>
+            <RoleGuard
+              allow={["sales_admin", "accounts", "manager", "super_admin"]}
+            >
               <AppLayout>
                 <ComplaintDetail />
               </AppLayout>
@@ -186,7 +202,7 @@ export function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>
-  );
+  )
 }
 
-export default App;
+export default App

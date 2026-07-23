@@ -6,9 +6,9 @@ import { defineConfig } from "vite"
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  server:{
+  server: {
     host: true,
-    allowedHosts: ["pulmonary-wrongdoer-unedited.ngrok-free.dev"]
+    allowedHosts: ["pulmonary-wrongdoer-unedited.ngrok-free.dev"],
   },
   resolve: {
     alias: {

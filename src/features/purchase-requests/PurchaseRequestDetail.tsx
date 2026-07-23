@@ -37,7 +37,7 @@ export const PurchaseRequestDetail: React.FC = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { profile } = useAuth()
-  const { isManager, isSuperAdmin} = useRole()
+  const { isManager, isSuperAdmin } = useRole()
 
   const [commentText, setCommentText] = useState("")
   const threadEndRef = useRef<HTMLDivElement>(null)
@@ -277,18 +277,23 @@ export const PurchaseRequestDetail: React.FC = () => {
   })
 
   const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this purchase request? This action cannot be undone.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this purchase request? This action cannot be undone."
+      )
+    ) {
       deletePrMutation.mutate()
     }
   }
-
 
   // Loading state
   if (prLoading) {
     return (
       <div className="flex h-[50vh] flex-col items-center justify-center gap-4">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-        <p className="text-sm text-muted-foreground">Loading request details...</p>
+        <p className="text-sm text-muted-foreground">
+          Loading request details...
+        </p>
       </div>
     )
   }
@@ -299,11 +304,14 @@ export const PurchaseRequestDetail: React.FC = () => {
         <Truck className="h-12 w-12 text-slate-200 dark:text-slate-800" />
         <div>
           <h2 className="text-xl font-bold">Request Not Found</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="mt-1 text-sm text-muted-foreground">
             This purchase request doesn't exist or you don't have access.
           </p>
         </div>
-        <Button onClick={() => navigate("/purchase-requests")} className="mt-2 rounded-xl">
+        <Button
+          onClick={() => navigate("/purchase-requests")}
+          className="mt-2 rounded-xl"
+        >
           Back to Requests
         </Button>
       </div>
@@ -311,9 +319,9 @@ export const PurchaseRequestDetail: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-12">
+    <div className="mx-auto max-w-6xl space-y-6 pb-12">
       {/* Header */}
-      <div className="flex items-center max-md:flex-col max-md:items-start md:items-center gap-4">
+      <div className="flex items-center gap-4 max-md:flex-col max-md:items-start md:items-center">
         <Button
           variant="secondary"
           size="icon"
@@ -322,7 +330,7 @@ export const PurchaseRequestDetail: React.FC = () => {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div className="flex flex-1 items-center max-md:flex-col max-md:items-start md:items-center gap-4 justify-between">
+        <div className="flex flex-1 items-center justify-between gap-4 max-md:flex-col max-md:items-start md:items-center">
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
@@ -330,52 +338,57 @@ export const PurchaseRequestDetail: React.FC = () => {
               </h1>
               <StatusBadge status={pr.status} type="purchase" />
             </div>
-            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+            <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4" />
               Requested on {new Date(pr.created_at).toLocaleString()}
             </p>
           </div>
-          
+
           {/* Manager Controls */}
           {canApprove && (
-            <div className="flex flex-wrap items-center md:justify-end gap-2">
+            <div className="flex flex-wrap items-center gap-2 md:justify-end">
               {/* Delete Request */}
               <Button
                 onClick={handleDelete}
                 disabled={deletePrMutation.isPending}
                 variant="outline"
-                className="rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-600 border-rose-200 dark:border-rose-900/50"
+                className="rounded-xl border-rose-200 text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:border-rose-900/50"
               >
                 Delete Request
               </Button>
-                  {/* Edit Request */}
-                  {pr.status != "fulfilled" &&<Button
-                    render={<Link to={`/purchase-requests/${pr.id}/edit`} />}
-                    variant="outline"
-                    className="rounded-xl"
-                    nativeButton={false}
-                  >
-                    Edit Request
-                  </Button>}
+              {/* Edit Request */}
+              {pr.status != "fulfilled" && (
+                <Button
+                  render={<Link to={`/purchase-requests/${pr.id}/edit`} />}
+                  variant="outline"
+                  className="rounded-xl"
+                  nativeButton={false}
+                >
+                  Edit Request
+                </Button>
+              )}
 
               {pr.status === "requested" && (
                 <>
-
                   <Button
                     variant="outline"
-                    onClick={() => updateStatusMutation.mutate({ nextStatus: "cancelled" })}
+                    onClick={() =>
+                      updateStatusMutation.mutate({ nextStatus: "cancelled" })
+                    }
                     disabled={updateStatusMutation.isPending}
                     className="rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20"
                   >
-                    <XCircle className="h-4 w-4 mr-2" />
+                    <XCircle className="mr-2 h-4 w-4" />
                     Reject
                   </Button>
                   <Button
-                    onClick={() => updateStatusMutation.mutate({ nextStatus: "ordered" })}
+                    onClick={() =>
+                      updateStatusMutation.mutate({ nextStatus: "ordered" })
+                    }
                     disabled={updateStatusMutation.isPending}
-                    className="rounded-xl bg-amber-500 hover:bg-amber-600 text-white"
+                    className="rounded-xl bg-amber-500 text-white hover:bg-amber-600"
                   >
-                    <Truck className="h-4 w-4 mr-2" />
+                    <Truck className="mr-2 h-4 w-4" />
                     Approve & Order
                   </Button>
                 </>
@@ -383,22 +396,26 @@ export const PurchaseRequestDetail: React.FC = () => {
 
               {pr.status === "ordered" && (
                 <Button
-                  onClick={() => updateStatusMutation.mutate({ nextStatus: "received" })}
+                  onClick={() =>
+                    updateStatusMutation.mutate({ nextStatus: "received" })
+                  }
                   disabled={updateStatusMutation.isPending}
-                  className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white"
+                  className="rounded-xl bg-emerald-500 text-white hover:bg-emerald-600"
                 >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
                   Mark Received
                 </Button>
               )}
 
               {pr.status === "received" && (
                 <Button
-                  onClick={() => updateStatusMutation.mutate({ nextStatus: "fulfilled" })}
+                  onClick={() =>
+                    updateStatusMutation.mutate({ nextStatus: "fulfilled" })
+                  }
                   disabled={updateStatusMutation.isPending}
-                  className="rounded-xl bg-blue-500 hover:bg-blue-600 text-white"
+                  className="rounded-xl bg-blue-500 text-white hover:bg-blue-600"
                 >
-                  <Box className="h-4 w-4 mr-2" />
+                  <Box className="mr-2 h-4 w-4" />
                   Mark Fulfilled
                 </Button>
               )}
@@ -407,44 +424,60 @@ export const PurchaseRequestDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column: Details & Audit Log */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           {/* Main Details Card */}
           <Card className="shadow-sm">
-            <CardHeader className="border-b ">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
+            <CardHeader className="border-b">
+              <CardTitle className="flex items-center gap-2 text-base font-bold">
                 <Box className="h-5 w-5 text-primary" />
                 Product & Request Details
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="space-y-6 p-6">
               {/* Items Table */}
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                <h4 className="mb-3 flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
                   <Box className="h-4 w-4" /> Requested Items
                 </h4>
                 <div className="overflow-x-auto rounded-xl border bg-card">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="font-semibold text-xs">Product Name</TableHead>
-                        <TableHead className="font-semibold text-xs">Specifications</TableHead>
-                        <TableHead className="font-semibold text-xs w-28">Quantity</TableHead>
+                        <TableHead className="text-xs font-semibold">
+                          Product Name
+                        </TableHead>
+                        <TableHead className="text-xs font-semibold">
+                          Specifications
+                        </TableHead>
+                        <TableHead className="w-28 text-xs font-semibold">
+                          Quantity
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {pr.purchase_request_items && pr.purchase_request_items.length > 0 ? (
+                      {pr.purchase_request_items &&
+                      pr.purchase_request_items.length > 0 ? (
                         pr.purchase_request_items.map((item: any) => (
                           <TableRow key={item.id}>
-                            <TableCell className="font-semibold text-xs">{item.product_name}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{item.specs || "-"}</TableCell>
-                            <TableCell className="font-semibold text-xs">{item.quantity} units</TableCell>
+                            <TableCell className="text-xs font-semibold">
+                              {item.product_name}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {item.specs || "-"}
+                            </TableCell>
+                            <TableCell className="text-xs font-semibold">
+                              {item.quantity} units
+                            </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center py-4 text-xs text-muted-foreground">
+                          <TableCell
+                            colSpan={3}
+                            className="py-4 text-center text-xs text-muted-foreground"
+                          >
                             No items found in this request
                           </TableCell>
                         </TableRow>
@@ -455,9 +488,9 @@ export const PurchaseRequestDetail: React.FC = () => {
               </div>
 
               {/* Metadata Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 pt-4 border-t">
+              <div className="grid grid-cols-1 gap-x-8 gap-y-6 border-t pt-4 md:grid-cols-2">
                 <div>
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                  <h4 className="flex items-center gap-1 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                     <User className="h-3 w-3" /> Requested By
                   </h4>
                   <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
@@ -466,31 +499,38 @@ export const PurchaseRequestDetail: React.FC = () => {
                 </div>
 
                 <div>
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                  <h4 className="flex items-center gap-1 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                     <Calendar className="h-3 w-3" /> Expected Delivery
                   </h4>
                   <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
-                    {pr.expected_date ? new Date(pr.expected_date).toLocaleDateString() : "Not specified"}
+                    {pr.expected_date
+                      ? new Date(pr.expected_date).toLocaleDateString()
+                      : "Not specified"}
                   </p>
                 </div>
 
                 <div>
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                  <h4 className="flex items-center gap-1 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                     <ClipboardList className="h-3 w-3" /> Linked Order
                   </h4>
                   <p className="mt-1 text-sm font-medium">
                     {pr.order_id ? (
-                      <Link to={`/orders/${pr.order_id}`} className="text-primary hover:underline">
+                      <Link
+                        to={`/orders/${pr.order_id}`}
+                        className="text-primary hover:underline"
+                      >
                         {pr.orders?.order_no || "View Order"}
                       </Link>
                     ) : (
-                      <span className="text-slate-500 italic">General Stock Replenishment</span>
+                      <span className="text-slate-500 italic">
+                        General Stock Replenishment
+                      </span>
                     )}
                   </p>
                 </div>
 
                 <div>
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                     Supplier Info
                   </h4>
                   <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
@@ -503,31 +543,35 @@ export const PurchaseRequestDetail: React.FC = () => {
 
           {/* Audit Log / History */}
           <Card className="shadow-sm">
-            <CardHeader className="border-b  pb-4">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
+            <CardHeader className="border-b pb-4">
+              <CardTitle className="flex items-center gap-2 text-base font-bold">
                 <Activity className="h-5 w-5 text-amber-500" />
                 Change Actions & History
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {auditLoading ? (
-                <div className="p-8 text-center text-sm text-muted-foreground">Loading history...</div>
+                <div className="p-8 text-center text-sm text-muted-foreground">
+                  Loading history...
+                </div>
               ) : auditLogs.length === 0 ? (
-                <div className="p-8 text-center text-sm text-muted-foreground">No history logs found for this request.</div>
+                <div className="p-8 text-center text-sm text-muted-foreground">
+                  No history logs found for this request.
+                </div>
               ) : (
-                <div className="divide-y ">
+                <div className="divide-y">
                   {auditLogs.map((log) => (
-                    <div key={log.id} className="p-4 flex gap-4">
-                      <div className="mt-1 h-2 w-2 rounded-full bg-amber-500 shrink-0"></div>
+                    <div key={log.id} className="flex gap-4 p-4">
+                      <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-500"></div>
                       <div>
-                        <p className="text-xs">
-                          {log.action}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-                          <Clock className="h-3 w-3 " />
+                        <p className="text-xs">{log.action}</p>
+                        <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
                           {new Date(log.created_at).toLocaleString()}
                           <span>•</span>
-                          <span className="font-medium">{log.profiles?.full_name || "System"}</span>
+                          <span className="font-medium">
+                            {log.profiles?.full_name || "System"}
+                          </span>
                         </p>
                       </div>
                     </div>
@@ -540,41 +584,53 @@ export const PurchaseRequestDetail: React.FC = () => {
 
         {/* Right Column: Discussions */}
         <div className="space-y-6">
-          <Card className="shadow-sm flex flex-col h-[600px] pb-0">
-            <CardHeader className="border-b  pb-4 shrink-0">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
+          <Card className="flex h-[600px] flex-col pb-0 shadow-sm">
+            <CardHeader className="shrink-0 border-b pb-4">
+              <CardTitle className="flex items-center gap-2 text-base font-bold">
                 <MessageSquare className="h-5 w-5 text-indigo-500" />
                 Discussions
               </CardTitle>
             </CardHeader>
-            
-            <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+
+            <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
+              <div className="flex-1 scrollbar-thin space-y-4 overflow-y-auto p-4">
                 {commentsLoading ? (
-                  <div className="text-center py-4 text-xs text-muted-foreground">Loading discussions...</div>
+                  <div className="py-4 text-center text-xs text-muted-foreground">
+                    Loading discussions...
+                  </div>
                 ) : comments.length === 0 ? (
-                  <div className="flex h-full flex-col items-center justify-center text-center py-8">
-                    <MessageSquare className="h-8 w-8 text-slate-200 dark:text-slate-800 mb-2" />
-                    <p className="text-xs text-muted-foreground">No discussion points yet.<br/>Start coordinating below.</p>
+                  <div className="flex h-full flex-col items-center justify-center py-8 text-center">
+                    <MessageSquare className="mb-2 h-8 w-8 text-slate-200 dark:text-slate-800" />
+                    <p className="text-xs text-muted-foreground">
+                      No discussion points yet.
+                      <br />
+                      Start coordinating below.
+                    </p>
                   </div>
                 ) : (
                   comments.map((comment) => {
-                    const isMe = comment.author_id === profile?.id;
+                    const isMe = comment.author_id === profile?.id
                     return (
-                      <div key={comment.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                        <div className="flex items-center gap-2 mb-1 px-1">
+                      <div
+                        key={comment.id}
+                        className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
+                      >
+                        <div className="mb-1 flex items-center gap-2 px-1">
                           <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">
                             {isMe ? "You" : comment.profiles?.full_name}
                           </span>
                           <span className="text-[9px] text-muted-foreground">
-                            {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(comment.created_at).toLocaleTimeString(
+                              [],
+                              { hour: "2-digit", minute: "2-digit" }
+                            )}
                           </span>
                         </div>
                         <div
                           className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
                             isMe
-                              ? "bg-indigo-600 text-white rounded-tr-sm"
-                              : "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 rounded-tl-sm border border-slate-200/50 dark:border-slate-700/50"
+                              ? "rounded-tr-sm bg-indigo-600 text-white"
+                              : "rounded-tl-sm border border-slate-200/50 bg-slate-100 text-slate-800 dark:border-slate-700/50 dark:bg-slate-800 dark:text-slate-200"
                           }`}
                         >
                           {comment.comment}
@@ -586,7 +642,7 @@ export const PurchaseRequestDetail: React.FC = () => {
                 <div ref={threadEndRef} />
               </div>
 
-              <div className="p-3 border-t bg-muted shrink-0">
+              <div className="shrink-0 border-t bg-muted p-3">
                 <div className="flex gap-2">
                   <Input
                     placeholder="Type a message..."
@@ -599,7 +655,9 @@ export const PurchaseRequestDetail: React.FC = () => {
                   />
                   <Button
                     onClick={() => postCommentMutation.mutate()}
-                    disabled={!commentText.trim() || postCommentMutation.isPending}
+                    disabled={
+                      !commentText.trim() || postCommentMutation.isPending
+                    }
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl p-0"
                   >
                     <Send className="h-4 w-4" />

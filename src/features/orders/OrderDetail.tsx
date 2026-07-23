@@ -65,7 +65,7 @@ export const OrderDetail: React.FC = () => {
   const isMobile = useIsMobile()
 
   const [statusNote, setStatusNote] = useState("")
-  const [nextStatus, setNextStatus] = useState<string|null>(null)
+  const [nextStatus, setNextStatus] = useState<string | null>(null)
   const [prDialogOpen, setPrDialogOpen] = useState(false)
 
   interface PrFormItem {
@@ -116,13 +116,19 @@ export const OrderDetail: React.FC = () => {
         quantity: 1,
         selected: true,
         is_custom: true,
-      }
+      },
     ])
   }
 
-  const handleUpdatePrItem = (id: string, field: keyof PrFormItem, value: any) => {
+  const handleUpdatePrItem = (
+    id: string,
+    field: keyof PrFormItem,
+    value: any
+  ) => {
     setPrFormItems(
-      prFormItems.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+      prFormItems.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item
+      )
     )
   }
 
@@ -288,7 +294,9 @@ export const OrderDetail: React.FC = () => {
   // Mutation: Create Purchase Request (Multi-Item)
   const createPrMutation = useMutation({
     mutationFn: async () => {
-      const selectedItems = prFormItems.filter((item) => item.selected && item.item_name.trim() !== "")
+      const selectedItems = prFormItems.filter(
+        (item) => item.selected && item.item_name.trim() !== ""
+      )
       if (selectedItems.length === 0) {
         throw new Error("Select or add at least one item to purchase")
       }
@@ -345,10 +353,7 @@ export const OrderDetail: React.FC = () => {
   // Delete Order mutation
   const deleteOrderMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("orders")
-        .delete()
-        .eq("id", id)
+      const { error } = await supabase.from("orders").delete().eq("id", id)
       if (error) throw error
 
       // Log to audit log
@@ -372,7 +377,11 @@ export const OrderDetail: React.FC = () => {
   })
 
   const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this order? This action cannot be undone.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this order? This action cannot be undone."
+      )
+    ) {
       deleteOrderMutation.mutate()
     }
   }
@@ -406,15 +415,20 @@ export const OrderDetail: React.FC = () => {
   )
 
   // Stepper timeline configurations
-  const pipelineStatuses = ["enquiry", "quotation", "invoice", "purchase", "completed"]
+  const pipelineStatuses = [
+    "enquiry",
+    "quotation",
+    "invoice",
+    "purchase",
+    "completed",
+  ]
   const currentStatusIndex = pipelineStatuses.indexOf(order.status)
   const isCancelled = order.status === "cancelled"
-
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center md:justify-between max-md:flex-col max-md:items-start gap-3">
+      <div className="flex items-center gap-3 max-md:flex-col max-md:items-start md:justify-between">
         <Button
           render={<Link to="/orders" />}
           variant="ghost"
@@ -466,74 +480,75 @@ export const OrderDetail: React.FC = () => {
               Delete Order
             </Button>
           )}
-
         </div>
       </div>
 
       {/* Pipeline Stepper Stepper */}
-      {!isMobile &&<Card>
-        <CardContent className="p-4">
-          {isCancelled ? (
-            <div className="flex items-center justify-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-rose-500">
-              <AlertCircle className="h-5 w-5" />
-              <span className="text-sm font-bold">
-                This order has been Cancelled
-              </span>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-between gap-6  sm:flex-row sm:gap-2">
-              {pipelineStatuses.map((status, index) => {
-                const isPassed = index <= currentStatusIndex
-                const isCurrent = index === currentStatusIndex
-                return (
-                  <React.Fragment key={status}>
-                    <div className="flex flex-col items-center text-center">
-                      <div
-                        className={`flex h-9 w-9 items-center justify-center rounded-full border text-xs font-bold transition-all ${
-                          isCurrent
-                            ? "scale-110 border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                            : isPassed
-                              ? "border-primary bg-muted"
-                              : ""
-                        }`}
-                      >
-                        {index + 1}
+      {!isMobile && (
+        <Card>
+          <CardContent className="p-4">
+            {isCancelled ? (
+              <div className="flex items-center justify-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-rose-500">
+                <AlertCircle className="h-5 w-5" />
+                <span className="text-sm font-bold">
+                  This order has been Cancelled
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-between gap-6 sm:flex-row sm:gap-2">
+                {pipelineStatuses.map((status, index) => {
+                  const isPassed = index <= currentStatusIndex
+                  const isCurrent = index === currentStatusIndex
+                  return (
+                    <React.Fragment key={status}>
+                      <div className="flex flex-col items-center text-center">
+                        <div
+                          className={`flex h-9 w-9 items-center justify-center rounded-full border text-xs font-bold transition-all ${
+                            isCurrent
+                              ? "scale-110 border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                              : isPassed
+                                ? "border-primary bg-muted"
+                                : ""
+                          }`}
+                        >
+                          {index + 1}
+                        </div>
+                        <span
+                          className={`mt-2 text-[10px] font-bold tracking-wider uppercase ${
+                            isCurrent
+                              ? "text-primary"
+                              : isPassed
+                                ? ""
+                                : "text-muted-foreground"
+                          }`}
+                        >
+                          {status}
+                        </span>
                       </div>
-                      <span
-                        className={`mt-2 text-[10px] font-bold tracking-wider uppercase ${
-                          isCurrent
-                            ? "text-primary"
-                            : isPassed
-                              ? ""
-                              : "text-muted-foreground"
-                        }`}
-                      >
-                        {status}
-                      </span>
-                    </div>
-                    {index < pipelineStatuses.length - 1 && (
-                      <div
-                        className={`mx-4 hidden h-[2px] flex-1 rounded-full sm:block ${
-                          index < currentStatusIndex
-                            ? "bg-primary"
-                            : "bg-muted"
-                        }`}
-                      />
-                    )}
-                  </React.Fragment>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>}
+                      {index < pipelineStatuses.length - 1 && (
+                        <div
+                          className={`mx-4 hidden h-[2px] flex-1 rounded-full sm:block ${
+                            index < currentStatusIndex
+                              ? "bg-primary"
+                              : "bg-muted"
+                          }`}
+                        />
+                      )}
+                    </React.Fragment>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Core items and comments */}
         <div className="space-y-6 lg:col-span-2">
           {/* Order Details card */}
           <Card>
-            <CardHeader className="flex md:flex-row flex-col md:items-center  md:justify-between border-b p-5 ">
+            <CardHeader className="flex flex-col border-b p-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <span className="text-[10px] font-bold text-muted-foreground uppercase">
                   Order details
@@ -548,7 +563,7 @@ export const OrderDetail: React.FC = () => {
                     onClick={handleOpenBulkPrDialog}
                     variant="outline"
                     size="sm"
-                    className="h-8 rounded-xl text-xs gap-1"
+                    className="h-8 gap-1 rounded-xl text-xs"
                   >
                     <Truck className="h-3.5 w-3.5" />
                     Raise Purchase Request
@@ -622,11 +637,11 @@ export const OrderDetail: React.FC = () => {
                       )}
                     </TableRow>
                   ))}
-                  <TableRow >
+                  <TableRow>
                     <TableCell colSpan={3} className="p-4 text-right text-xs">
                       Grand Total Amount
                     </TableCell>
-                    <TableCell className="p-4 text-right text-sm ">
+                    <TableCell className="p-4 text-right text-sm">
                       ₹
                       {orderTotal.toLocaleString("en-IN", {
                         minimumFractionDigits: 2,
@@ -642,8 +657,8 @@ export const OrderDetail: React.FC = () => {
           {/* Linked Modules Accordions (Purchase requests, complaints) */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Purchase requests card */}
-            <Card >
-              <CardHeader className="flex flex-row items-center justify-between border-b  p-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between border-b p-4">
                 <CardTitle className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
                   <Truck className="h-4 w-4 text-indigo-500" />
                   Procurements ({purchaseRequests.length})
@@ -668,7 +683,7 @@ export const OrderDetail: React.FC = () => {
                           >
                             {pr.request_no}
                           </Link>
-                          <span className="mt-0.5 block text-[10px] text-slate-650 dark:text-slate-400">
+                          <span className="text-slate-650 mt-0.5 block text-[10px] dark:text-slate-400">
                             {pr.purchase_request_items?.[0]
                               ? `${pr.purchase_request_items[0].product_name} (x${pr.purchase_request_items[0].quantity})${pr.purchase_request_items.length > 1 ? ` (+${pr.purchase_request_items.length - 1} more)` : ""}`
                               : "No items"}
@@ -687,8 +702,8 @@ export const OrderDetail: React.FC = () => {
             </Card>
 
             {/* Complaints card */}
-            <Card >
-              <CardHeader className="flex flex-row items-center justify-between border-b  p-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between border-b p-4">
                 <CardTitle className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
                   <AlertCircle className="h-4 w-4 text-rose-500" />
                   Complaints filed ({complaints.length})
@@ -700,7 +715,7 @@ export const OrderDetail: React.FC = () => {
                     No complaints filed for this order.
                   </p>
                 ) : (
-                  <div className="dark:divide-slate-850 divide-y ">
+                  <div className="dark:divide-slate-850 divide-y">
                     {complaints.map((c: any) => (
                       <div
                         key={c.id}
@@ -734,7 +749,7 @@ export const OrderDetail: React.FC = () => {
         {/* Sidebar Info & Update Status Forms */}
         <div className="space-y-6">
           {/* Customer profile link card */}
-          <Card >
+          <Card>
             <CardContent className="space-y-3 p-5">
               <div>
                 <span className="block text-[10px] font-bold text-muted-foreground uppercase">
@@ -742,13 +757,13 @@ export const OrderDetail: React.FC = () => {
                 </span>
                 <Link
                   to={`/customers/${order.customer_id}`}
-                  className="mt-0.5 block text-sm font-bold  hover:underline "
+                  className="mt-0.5 block text-sm font-bold hover:underline"
                 >
                   {order.customers?.name}
                 </Link>
               </div>
 
-              <div className="text-muted-foreground space-y-1.5 border-t  pt-2 text-xs ">
+              <div className="space-y-1.5 border-t pt-2 text-xs text-muted-foreground">
                 {order.customers?.phone && (
                   <p>Phone: {order.customers.phone}</p>
                 )}
@@ -757,7 +772,7 @@ export const OrderDetail: React.FC = () => {
                 )}
               </div>
 
-              <div className="dark:border-slate-850 border-t  pt-2 text-[10px] text-muted-foreground">
+              <div className="dark:border-slate-850 border-t pt-2 text-[10px] text-muted-foreground">
                 <p>Created by: {order.profiles?.full_name || "System"}</p>
                 <p className="mt-1">
                   Date: {new Date(order.created_at).toLocaleString()}
@@ -767,8 +782,8 @@ export const OrderDetail: React.FC = () => {
           </Card>
 
           {/* Update Status form */}
-          <Card >
-            <CardHeader className="dark:border-slate-850 border-b  pb-3">
+          <Card>
+            <CardHeader className="dark:border-slate-850 border-b pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-bold">
                 <Clock className="h-4.5 w-4.5 text-primary" />
                 Pipeline status control
@@ -777,21 +792,24 @@ export const OrderDetail: React.FC = () => {
             <CardContent className="space-y-4 p-5">
               <div className="space-y-2">
                 <Label htmlFor="status-select">Transition Status To</Label>
-                <Select  value={nextStatus||order.status}  onValueChange={(value:any) => setNextStatus(value)}>
-      <SelectTrigger className="w-full">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          <SelectLabel>Select Status</SelectLabel>
-          {items.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+                <Select
+                  value={nextStatus || order.status}
+                  onValueChange={(value: any) => setNextStatus(value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Select Status</SelectLabel>
+                      {items.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -822,15 +840,15 @@ export const OrderDetail: React.FC = () => {
 
       {/* Dialog for Raising Purchase Request */}
       <Dialog open={prDialogOpen} onOpenChange={setPrDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader className="flex flex-row items-center md:justify-between max-md:flex-col max-md:items-start gap-3">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader className="flex flex-row items-center gap-3 max-md:flex-col max-md:items-start md:justify-between">
             <DialogTitle>Raise Stock Purchase Request</DialogTitle>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={handleAddCustomPrItem}
-              className="rounded-lg text-xs gap-1 mr-6"
+              className="mr-6 gap-1 rounded-lg text-xs"
             >
               <Plus className="h-3.5 w-3.5" />
               Add Custom Item
@@ -839,35 +857,58 @@ export const OrderDetail: React.FC = () => {
 
           <div className="space-y-4 pt-2 text-xs">
             {/* Items List */}
-            <div className="space-y-2 rounded-xl border p-3 max-h-[35vh] overflow-y-auto bg-slate-50/50 dark:bg-slate-950/20">
-              <span className="font-bold text-[10px] uppercase text-muted-foreground tracking-wider">
+            <div className="max-h-[35vh] space-y-2 overflow-y-auto rounded-xl border bg-slate-50/50 p-3 dark:bg-slate-950/20">
+              <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                 Select Items to Order
               </span>
               {prFormItems.length === 0 ? (
-                <p className="text-center text-muted-foreground py-4">No items added yet.</p>
+                <p className="py-4 text-center text-muted-foreground">
+                  No items added yet.
+                </p>
               ) : (
                 <div className="space-y-3">
                   {prFormItems.map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 border-b pb-2.5 last:border-b-0 last:pb-0">
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3 border-b pb-2.5 last:border-b-0 last:pb-0"
+                    >
                       <input
                         type="checkbox"
                         checked={item.selected}
-                        onChange={(e) => handleUpdatePrItem(item.id, "selected", e.target.checked)}
+                        onChange={(e) =>
+                          handleUpdatePrItem(
+                            item.id,
+                            "selected",
+                            e.target.checked
+                          )
+                        }
                         className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                       />
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div className="grid flex-1 grid-cols-1 gap-2 md:grid-cols-2">
                         {item.is_custom ? (
                           <div className="space-y-1">
                             <Input
                               placeholder="Product Name"
                               value={item.item_name}
-                              onChange={(e) => handleUpdatePrItem(item.id, "item_name", e.target.value)}
+                              onChange={(e) =>
+                                handleUpdatePrItem(
+                                  item.id,
+                                  "item_name",
+                                  e.target.value
+                                )
+                              }
                               className="h-8 text-xs"
                             />
                             <Input
                               placeholder="Specs (e.g. size, details)"
                               value={item.specs}
-                              onChange={(e) => handleUpdatePrItem(item.id, "specs", e.target.value)}
+                              onChange={(e) =>
+                                handleUpdatePrItem(
+                                  item.id,
+                                  "specs",
+                                  e.target.value
+                                )
+                              }
                               className="h-7 text-[10px] text-muted-foreground"
                             />
                           </div>
@@ -884,12 +925,20 @@ export const OrderDetail: React.FC = () => {
                           </div>
                         )}
                         <div className="flex items-center justify-end gap-2">
-                          <span className="text-muted-foreground mr-1 text-[11px]">Qty:</span>
+                          <span className="mr-1 text-[11px] text-muted-foreground">
+                            Qty:
+                          </span>
                           <Input
                             type="number"
                             min="1"
                             value={item.quantity}
-                            onChange={(e) => handleUpdatePrItem(item.id, "quantity", Math.max(1, Number(e.target.value)))}
+                            onChange={(e) =>
+                              handleUpdatePrItem(
+                                item.id,
+                                "quantity",
+                                Math.max(1, Number(e.target.value))
+                              )
+                            }
                             className="h-8 w-16 text-center text-xs"
                           />
                           {item.is_custom && (
@@ -897,7 +946,7 @@ export const OrderDetail: React.FC = () => {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDeleteCustomPrItem(item.id)}
-                              className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg animate-fade-in"
+                              className="animate-fade-in h-8 w-8 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-600"
                             >
                               <Plus className="h-4 w-4 rotate-45" />
                             </Button>
@@ -910,7 +959,7 @@ export const OrderDetail: React.FC = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="pr-supplier">Supplier Details (Optional)</Label>
                 <Input
@@ -938,7 +987,7 @@ export const OrderDetail: React.FC = () => {
               </div>
             </div>
 
-            <DialogFooter className="pt-4 border-t mt-4">
+            <DialogFooter className="mt-4 border-t pt-4">
               <DialogClose
                 render={
                   <Button
@@ -952,7 +1001,12 @@ export const OrderDetail: React.FC = () => {
               />
               <Button
                 onClick={() => createPrMutation.mutate()}
-                disabled={createPrMutation.isPending || prFormItems.filter(item => item.selected && item.item_name.trim() !== "").length === 0}
+                disabled={
+                  createPrMutation.isPending ||
+                  prFormItems.filter(
+                    (item) => item.selected && item.item_name.trim() !== ""
+                  ).length === 0
+                }
                 className="rounded-xl"
               >
                 {createPrMutation.isPending
@@ -965,7 +1019,7 @@ export const OrderDetail: React.FC = () => {
       </Dialog>
 
       {/* Chronological Status history card */}
-      <Card >
+      <Card>
         <CardHeader className="border-b p-5">
           <CardTitle className="flex items-center gap-2 text-base font-bold">
             <Clock className="h-5 w-5 text-muted-foreground" />
@@ -996,9 +1050,7 @@ export const OrderDetail: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {history.map((log) => (
-                  <TableRow
-                    key={log.id}
-                  >
+                  <TableRow key={log.id}>
                     <TableCell className="font-medium">
                       {log.profiles?.full_name || "System"}
                     </TableCell>
